@@ -29,7 +29,7 @@ test = [
     "pytest-timeout",
     "docstring-parser",
     "jinja2",
-    "kfp-kubernetes>=2.15.2",
+    "packaging",
     "pyyaml",
     "semver",
     "pip",
