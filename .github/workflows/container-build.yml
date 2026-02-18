@@ -129,6 +129,8 @@ jobs:
       github.repository_owner == 'kubeflow'
     needs: build
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
