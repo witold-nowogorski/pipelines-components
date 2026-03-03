@@ -8,7 +8,6 @@ import pytest
 
 from ...lib.base_image import (
     extract_base_images,
-    get_base_images_from_compile_result,
     is_valid_base_image,
     load_base_image_allowlist,
     validate_base_images,
@@ -307,7 +306,7 @@ class TestCompileAndGetYaml:
             assert "deploymentSpec" in ir_yaml
 
     def test_compile_pipeline(self):
-        """Test compiling a pipeline to YAML (single- or two-doc return)."""
+        """Test compiling a pipeline to YAML."""
         module_path = str(RESOURCES_DIR / "pipelines/training/multi_image_pipeline/pipeline.py")
         module = load_module_from_path(module_path, "test_compile_pipeline")
 
@@ -316,14 +315,8 @@ class TestCompileAndGetYaml:
             ir_yaml = compile_and_get_yaml(module.training_pipeline, output_path)
 
             assert ir_yaml is not None
-            # Single doc: pipeline spec at top level; two docs: wrapper with pipeline_spec key.
-            if "pipeline_spec" in ir_yaml:
-                spec = ir_yaml["pipeline_spec"]
-                assert "deploymentSpec" in spec
-                assert "root" in spec
-            else:
-                assert "deploymentSpec" in ir_yaml
-                assert "root" in ir_yaml
+            assert "deploymentSpec" in ir_yaml
+            assert "root" in ir_yaml
 
 
 class TestExtractBaseImages:
@@ -338,7 +331,7 @@ class TestExtractBaseImages:
             output_path = f"{tmp_dir}/component.yaml"
             ir_yaml = compile_and_get_yaml(module.train_model, output_path)
             assert ir_yaml is not None
-            images = get_base_images_from_compile_result(ir_yaml)
+            images = extract_base_images(ir_yaml)
 
             assert "ghcr.io/kubeflow/ml-training:v1.0.0" in images
 
@@ -351,7 +344,7 @@ class TestExtractBaseImages:
             output_path = f"{tmp_dir}/component.yaml"
             ir_yaml = compile_and_get_yaml(module.load_data, output_path)
             assert ir_yaml is not None
-            images = get_base_images_from_compile_result(ir_yaml)
+            images = extract_base_images(ir_yaml)
 
             assert len(images) == 1
             assert any("python:" in img for img in images)
@@ -365,7 +358,7 @@ class TestExtractBaseImages:
             output_path = f"{tmp_dir}/pipeline.yaml"
             ir_yaml = compile_and_get_yaml(module.training_pipeline, output_path)
             assert ir_yaml is not None
-            images = get_base_images_from_compile_result(ir_yaml)
+            images = extract_base_images(ir_yaml)
 
             assert "python:3.11-slim" in images
             assert "ghcr.io/kubeflow/evaluation:v2.0.0" in images
