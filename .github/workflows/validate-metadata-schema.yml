@@ -35,7 +35,7 @@ jobs:
         uses: ./.github/actions/detect-changed-assets
         with:
           filter: '(?!.*\.md$).*$'
-          skip-deleted-files: 'true'
+          # skip-deleted-files: true  # TODO(gmfrasca): uncomment once param is available
 
       - name: Validate changed components
         if: ${{ steps.changed-assets.outputs.has-changed-components == 'true' }}

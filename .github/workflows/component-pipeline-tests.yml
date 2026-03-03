@@ -41,8 +41,6 @@ jobs:
       - name: Detect changed files
         id: changes
         uses: ./.github/actions/detect-changed-assets
-        with:
-          skip-deleted-files: 'true'
 
       - name: Run targeted pytest suites
         if: ${{ steps.changes.outputs.has-changes == 'true' }}
