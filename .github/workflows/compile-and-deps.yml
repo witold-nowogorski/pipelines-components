@@ -1,7 +1,5 @@
 ---
 name: Compile and Validate Components
-permissions:
-  contents: read
 
 on:
   pull_request:
