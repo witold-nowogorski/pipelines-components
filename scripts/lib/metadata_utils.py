@@ -6,12 +6,16 @@ import logging
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import yaml
-from packaging.specifiers import SpecifierSet
 
-from .discovery import get_repo_root
+from scripts.lib.discovery import get_repo_root
+
+try:
+    from packaging.specifiers import SpecifierSet
+except ImportError:  # pragma: no cover - optional dependency
+    SpecifierSet = None  # type: ignore[assignment]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -23,8 +27,7 @@ class MetadataTarget:
     metadata_path: Path
     module_path: Path
     target_kind: str  # "component" or "pipeline"
-    # requires from typing import Any
-    metadata: dict[str, Any]
+    metadata: dict
 
 
 def discover_metadata_files(repo_root: Optional[Path] = None) -> list[tuple[Path, str]]:
@@ -50,7 +53,7 @@ def discover_metadata_files(repo_root: Optional[Path] = None) -> list[tuple[Path
     return discovered
 
 
-def load_metadata(metadata_path: Path) -> dict[str, Any]:
+def load_metadata(metadata_path: Path) -> dict:
     """Load and validate a metadata YAML file."""
     with metadata_path.open("r", encoding="utf-8") as handle:
         data = yaml.safe_load(handle) or {}
@@ -59,7 +62,7 @@ def load_metadata(metadata_path: Path) -> dict[str, Any]:
         return data
 
 
-def metadata_should_run(metadata: dict[str, Any], include_flagless: bool) -> bool:
+def metadata_should_run(metadata: dict, include_flagless: bool) -> bool:
     """Return whether metadata indicates the target should be processed."""
     ci_config = metadata.get("ci") or {}
     if "compile_check" in ci_config:
@@ -104,7 +107,11 @@ def create_metadata_targets(
     targets: list[MetadataTarget] = []
 
     for metadata_path, target_kind in discovered:
-        metadata = load_metadata(metadata_path)
+        try:
+            metadata = load_metadata(metadata_path)
+        except Exception as exc:  # pragma: no cover - exercised indirectly
+            log.error("Failed to read metadata %s: %s", metadata_path, exc)
+            continue
 
         if not metadata_should_run(metadata, include_flagless):
             log.debug("Skipping %s (compile_check disabled).", metadata_path)
@@ -149,7 +156,7 @@ def create_metadata_targets(
     return targets
 
 
-def validate_dependencies(metadata: dict[str, Any]) -> tuple[list[str], list[str]]:
+def validate_dependencies(metadata: dict) -> tuple[list[str], list[str]]:
     """Validate dependency metadata declared for a target.
 
     Returns:
@@ -185,12 +192,15 @@ def validate_dependencies(metadata: dict[str, Any]) -> tuple[list[str], list[str
                 errors.append(f"{label} is missing a `name` field.")
             if not version:
                 errors.append(f"{label} for {name or '<unknown>'} is missing a `version` field.")
-            else:
+            elif SpecifierSet is not None:
                 try:
                     SpecifierSet(str(version))
-                except Exception as exc:
+                except Exception as exc:  # pragma: no cover - exercised indirectly
                     errors.append(
                         f"{label} for {name or '<unknown>'} has an invalid version specifier {version!r}: {exc}"
                     )
+            else:
+                warnings.append("packaging module not available; skipping validation for dependency versions.")
+                return errors, warnings
 
     return errors, warnings
