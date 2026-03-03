@@ -71,7 +71,7 @@ class GitClient:
         """Fetch the base branch if it's a remote reference.
 
         Args:
-            base_ref: Git reference (e.g., 'origin/main', 'origin/release-1.11').
+            base_ref: Git reference (e.g., 'origin/main').
         """
         if not base_ref.startswith("origin/"):
             return
@@ -314,8 +314,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--base-ref",
-        default="origin/HEAD",
-        help="Base git reference to compare against (default: origin/HEAD)",
+        default="origin/main",
+        help="Base git reference to compare against (default: origin/main)",
     )
     parser.add_argument(
         "--head-ref",

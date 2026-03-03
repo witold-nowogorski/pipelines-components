@@ -4,14 +4,12 @@ name: Base Image Validation
 on:
   push:
     branches:
-      - 'main'
-      - 'release-*'
+      - main
     tags:
       - 'v*'
   pull_request:
     branches:
-      - 'main'
-      - 'release-*'
+      - main
     paths:
       - 'components/**'
       - 'pipelines/**'

@@ -4,14 +4,12 @@ name: Build and Test Python Packages
 on:
   push:
     branches:
-      - 'main'
-      - 'release-*'
+      - main
     tags:
       - 'v*'
   pull_request:
     branches:
-      - 'main'
-      - 'release-*'
+      - main
 
 jobs:
   build:

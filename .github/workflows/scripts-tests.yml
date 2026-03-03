@@ -4,14 +4,12 @@ name: Scripts Unit Tests
 on:
   push:
     branches:
-      - 'main'
-      - 'release-*'
+      - main
     tags:
       - 'v*'
   pull_request:
     branches:
-      - 'main'
-      - 'release-*'
+      - main
     paths:
       - '.github/scripts/**'
       - 'scripts/**'
