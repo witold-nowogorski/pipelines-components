@@ -104,6 +104,7 @@ def train_model(
     from typing import Dict
 
     from kfp_components.components.training.finetuning_algorithms.shared import (
+        compute_nproc,
         configure_env,
         create_logger,
         download_oci_model,
@@ -114,7 +115,9 @@ def train_model(
         plot_training_loss,
         prepare_jsonl,
         resolve_dataset,
+        select_runtime,
         setup_hf_token,
+        wait_for_training_job,
     )
 
     log = create_logger("train_model")
@@ -168,31 +171,14 @@ def train_model(
 
         client = TrainerClient(KubernetesBackendConfig(client_configuration=_api.configuration))
 
-        def _select_runtime(c):
-            for r in c.list_runtimes():
-                if getattr(r, "name", "") == "training-hub":
-                    log.info(f"Runtime: {r}")
-                    return r
-            raise RuntimeError("Runtime 'training-hub' not found")
-
-        runtime = _select_runtime(client)
-
-        def _int(v, d: int) -> int:
-            if v is None:
-                return d
-            if isinstance(v, int):
-                return v
-            s = str(v).strip()
-            return int(s) if s else d
-
-        def _nproc():
-            auto = str(training_resource_num_procs_per_worker).strip().lower() == "auto"
-            np = training_resource_gpu_per_worker if auto else _int(training_resource_num_procs_per_worker, 1)
-            nn = _int(training_resource_num_workers, 1)
-            return max(np, 1), max(nn, 1)
+        runtime = select_runtime(client, log)
 
         def _params() -> Dict:
-            np, nn = _nproc()
+            np, nn = compute_nproc(
+                training_resource_gpu_per_worker,
+                training_resource_num_procs_per_worker,
+                num_workers=training_resource_num_workers,
+            )
             b = {
                 "model_path": resolved,
                 "data_path": jsonl if os.path.exists(jsonl) else ds_dir,
@@ -291,16 +277,7 @@ def train_model(
             runtime=runtime,
         )
         log.info(f"Job: {job}")
-        client.wait_for_job_status(name=job, status={"Running"}, timeout=900)
-        client.wait_for_job_status(name=job, status={"Complete", "Failed"}, timeout=1800)
-        j = client.get_job(name=job)
-        if getattr(j, "status", None) == "Failed":
-            log.error(f"Job failed: {j.status}")
-            raise RuntimeError(f"Job failed: {j.status}")
-        elif getattr(j, "status", None) != "Complete":
-            log.error(f"Unexpected status: {j.status}")
-            raise RuntimeError(f"Unexpected status: {j.status}")
-        log.info("Training completed successfully")
+        wait_for_training_job(client, job, log)
     except Exception as e:
         log.error(f"Training failed: {e}")
         raise
