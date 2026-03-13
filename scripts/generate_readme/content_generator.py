@@ -1,44 +1,17 @@
 """README content generator for KFP components and pipelines."""
 
 import logging
-import textwrap
 from pathlib import Path
+from re import sub
 from typing import Any, Dict
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
 
-from scripts.generate_readme.constants import MAX_LINE_LENGTH, README_TEMPLATE
-from scripts.generate_readme.utils import format_title
+from scripts.generate_readme.constants import README_TEMPLATE
+from scripts.generate_readme.utils import format_title, wrap_text
 
 logger = logging.getLogger(__name__)
-
-
-def wrap_text(text: str, width: int = MAX_LINE_LENGTH) -> str:
-    """Wrap text to specified width while preserving paragraph breaks.
-
-    Args:
-        text: The text to wrap.
-        width: Maximum line width.
-
-    Returns:
-        Wrapped text with preserved paragraph structure.
-    """
-    if not text:
-        return text
-
-    # Split into paragraphs (separated by blank lines)
-    paragraphs = text.split("\n\n")
-    wrapped_paragraphs = []
-
-    for paragraph in paragraphs:
-        # Remove existing line breaks within paragraph
-        paragraph = " ".join(paragraph.split())
-        # Wrap to width
-        wrapped = textwrap.fill(paragraph, width=width, break_long_words=False, break_on_hyphens=False)
-        wrapped_paragraphs.append(wrapped)
-
-    return "\n\n".join(wrapped_paragraphs)
 
 
 class ReadmeContentGenerator:
@@ -235,7 +208,7 @@ class ReadmeContentGenerator:
         overview = wrap_text(overview)
 
         # Prepare parameters with formatted defaults
-        # NOTE: Don't wrap descriptions - they go in table cells and wrapping breaks tables
+        # NOTE: Unwrap descriptions (taken from docstrings) - they go in table cells and wrapping breaks tables
         parameters = {}
         for param_name, param_info in self.metadata.get("parameters", {}).items():
             param_type = param_info.get("type", "Any")
@@ -246,7 +219,7 @@ class ReadmeContentGenerator:
             else:
                 default_str = "Required"
 
-            description = param_info.get("description", "")
+            description = sub(r"\n+", " ", param_info.get("description", ""))
 
             parameters[param_name] = {
                 "type": param_type,
@@ -255,12 +228,12 @@ class ReadmeContentGenerator:
             }
 
         # Prepare returns
-        # NOTE: Don't wrap description - it goes in a table cell
+        # NOTE: Unwrap description - it goes in a table cell
         returns = self.metadata.get("returns", {})
         if returns:
             returns = {
                 "type": returns.get("type", "Any"),
-                "description": returns.get("description", "Component output"),
+                "description": sub(r"\n+", " ", returns.get("description", "Component output")),
             }
 
         # Load example pipeline if it exists
