@@ -54,6 +54,7 @@ def init_k8s(log: logging.Logger) -> Optional[object]:
 
         import urllib3
 
+        # TODO: Remove this temporary workaround for SSL verification bypass
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         return k8s.ApiClient(cfg)
