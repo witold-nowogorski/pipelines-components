@@ -6,14 +6,18 @@
 
 Refit a specific AutoGluon model on the full training dataset.
 
-This component takes a trained AutoGluon TabularPredictor, loaded from predictor_path, and refits a specific model, identified by model_name, on the full training data. When extra_train_data_path is provided, the extra training data is loaded and passed to refit_full as train_data_extra. The
-test_dataset is used for evaluation and for writing metrics. The refitted model is saved with the suffix "_FULL" appended to model_name.
+This component takes a trained AutoGluon TabularPredictor, loaded from predictor_path, and refits a specific model,
+identified by model_name, on the full training data. When extra_train_data_path is provided, the extra training data is
+loaded and passed to refit_full as train_data_extra. The test_dataset is used for evaluation and for writing metrics.
+The refitted model is saved with the suffix "_FULL" appended to model_name.
 
 Artifacts are written under model_artifact.path in a directory named <model_name>_FULL (e.g. LightGBM_BAG_L1_FULL). The layout is:
 
-- model_artifact.path / <model_name>_FULL / predictor / TabularPredictor (predictor.pkl inside); clone with only the refitted model.
+- model_artifact.path / <model_name>_FULL / predictor / TabularPredictor (predictor.pkl inside); clone with only the
+refitted model.
 
-- model_artifact.path / <model_name>_FULL / metrics / metrics.json (evaluation results; leaderboard component reads this via display_name/metrics/metrics.json).
+- model_artifact.path / <model_name>_FULL / metrics / metrics.json (evaluation results; leaderboard component reads this
+via display_name/metrics/metrics.json).
 
 - model_artifact.path / <model_name>_FULL / metrics / feature_importance.json
 

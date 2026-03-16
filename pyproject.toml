@@ -105,7 +105,6 @@ packages = [
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json"]
 "kfp_components.components.training.automl.autogluon_models_full_refit" = ["notebook_templates/*.ipynb"]
-"kfp_components.components.training.autorag.rag_templates_optimization" = ["notebook_templates/*.ipynb"]
 
 [tool.ruff]
 line-length = 120

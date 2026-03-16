@@ -6,15 +6,21 @@
 
 Automl Data Loader component.
 
-Loads tabular (CSV) data from S3 in batches, sampling up to 1GB of data, then splits the sampled data into test, selection-train, and extra-train sets.
+Loads tabular (CSV) data from S3 in batches, sampling up to 1GB of data, then splits the sampled data into test,
+selection-train, and extra-train sets.
 
-The component reads data in chunks to efficiently handle large files without loading the entire dataset into memory at once. After sampling, it performs a two-stage split:
+The component reads data in chunks to efficiently handle large files without loading the entire dataset into memory at
+once. After sampling, it performs a two-stage split:
 
-1. **Primary split** (default 80/20): separates a *test set* (20%, written to the ``sampled_test_dataset`` S3 artifact) from the *train portion* (80%).
+1. **Primary split** (default 80/20): separates a *test set* (20%, written to the ``sampled_test_dataset`` S3 artifact)
+from the *train portion* (80%).
 
-2. **Secondary split** (default 30/70 of the train portion): produces ``models_selection_train_dataset.csv`` (30%, used for model selection) and ``extra_train_dataset.csv`` (70%, passed to ``refit_full`` as extra data). Both are written to the PVC workspace under ``{workspace_path}/datasets/``.
+2. **Secondary split** (default 30/70 of the train portion): produces ``models_selection_train_dataset.csv`` (30%, used
+for model selection) and ``extra_train_dataset.csv`` (70%, passed to ``refit_full`` as extra data). Both are written to
+the PVC workspace under ``{workspace_path}/datasets/``.
 
-For **regression** tasks the split is random; for **binary** and **multiclass** tasks the split is **stratified** by the label column by default.
+For **regression** tasks the split is random; for **binary** and **multiclass** tasks the split is **stratified** by the
+label column by default.
 
 Authentication uses AWS-style credentials provided via environment variables (e.g. from a Kubernetes secret).
 
@@ -35,7 +41,7 @@ Authentication uses AWS-style credentials provided via environment variables (e.
 ## Outputs 📤
 
 | Name | Type | Description |
-| ---- | ---- | ----------- |
+|------|------|-------------|
 | Output | `NamedTuple('outputs', sample_config=dict, split_config=dict, sample_row=str, models_selection_train_data_path=str, extra_train_data_path=str)` | Contains sample config, split config, a sample row, and paths to selection-train and extra-train CSVs. |
 
 ## Metadata 🗂️
