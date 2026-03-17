@@ -53,8 +53,11 @@ def _run_succeeded(detail):
 
 
 def _find_artifacts_in_s3(s3_client, bucket, prefix):
-    """List object keys under prefix; return lists of keys for leaderboard HTML,
-    rag_patterns (directories/artifacts), and .ipynb notebooks.
+    """List object keys under prefix
+
+    Returns:
+        lists of keys for leaderboard HTML,
+        rag_patterns (directories/artifacts), and .ipynb notebooks.
     """
     html_keys = []
     ipynb_keys = []

@@ -5,14 +5,14 @@ import sys
 import tempfile
 from pathlib import Path
 
-_tests_dir = Path(__file__).resolve().parent
-if str(_tests_dir) not in sys.path:
-    sys.path.insert(0, str(_tests_dir))
-
 import pytest
 from integration_config import (
     get_docrag_lite_integration_config,
 )
+
+_tests_dir = Path(__file__).resolve().parent
+if str(_tests_dir) not in sys.path:
+    sys.path.insert(0, str(_tests_dir))
 
 
 @pytest.fixture(scope="session")
@@ -42,7 +42,10 @@ def kfp_client(docrag_lite_integration_config):
 
 
 def _sanitize_pipeline_yaml_to_ascii(path: Path) -> None:
-    """Overwrite file with ASCII-only content to avoid MySQL 'Incorrect string value' on backends that use a restrictive charset."""
+    """Overwrite file with ASCII-only content.
+
+    Done to avoid MySQL 'Incorrect string value' on backends that use a restrictive charset.
+    """
     with open(path, "rb") as f:
         data = f.read()
     try:

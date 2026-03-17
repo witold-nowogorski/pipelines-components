@@ -5,12 +5,12 @@ import sys
 import tempfile
 from pathlib import Path
 
+import pytest
+from integration_config import get_docrag_integration_config
+
 _tests_dir = Path(__file__).resolve().parent
 if str(_tests_dir) not in sys.path:
     sys.path.insert(0, str(_tests_dir))
-
-import pytest
-from integration_config import get_docrag_integration_config
 
 
 @pytest.fixture(scope="session")
