@@ -154,7 +154,7 @@ class TestAutomlDataLoaderUnitTests:
         sampled_test = _make_test_artifact(tmp_path)
 
         with _mock_boto3_and_pandas() as mock_s3:
-            with pytest.raises(ValueError, match="label_column must be provided when sampling_method='stratified'"):
+            with pytest.raises(TypeError, match="label_column must be a non-empty string"):
                 automl_data_loader.python_func(
                     file_key="data/file.csv",
                     bucket_name="bucket",

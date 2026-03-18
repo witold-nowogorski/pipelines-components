@@ -260,7 +260,7 @@ def autogluon_models_full_refit(
     try:
         sample_row_list = json.loads(sample_row)
     except json.JSONDecodeError as e:
-        raise ValueError(f"sample_row must be valid JSON array: {e}")
+        raise TypeError(f"sample_row must be valid JSON array: {e}")
     if not isinstance(sample_row_list, list):
         raise ValueError("sample_row must be a JSON array list of row objects).")
 
