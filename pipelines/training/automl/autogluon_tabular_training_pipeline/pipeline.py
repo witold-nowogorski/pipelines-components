@@ -17,7 +17,7 @@ from kfp_components.components.training.automl.autogluon_models_selection import
     ),
     pipeline_config=dsl.PipelineConfig(
         workspace=dsl.WorkspaceConfig(
-            size="2Gi",  # TODO: change to recommended size
+            size="12Gi",  # TODO: change to recommended size
             kubernetes=dsl.KubernetesWorkspaceConfig(
                 pvcSpecPatch={
                     # use default storage class from the cluster
