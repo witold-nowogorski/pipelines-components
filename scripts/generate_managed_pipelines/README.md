@@ -44,3 +44,6 @@ In the pipeline’s `metadata.yaml`:
 2. Optionally set `description` to override the decorator/docstring for the catalog.
 
 Only directories that contain both `metadata.yaml` and `pipeline.py` are considered.
+
+If any pipeline has `managed: true` but invalid metadata (missing/invalid `name` or `stability`, etc.),
+the command **exits with code 1** and prints an error; no `managed-pipelines.json` is written.
