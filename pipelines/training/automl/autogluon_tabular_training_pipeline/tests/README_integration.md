@@ -221,12 +221,6 @@ In the Jenkins job, set environment variables from your credential store (e.g. b
 Either set `RHOAI_KFP_URL` (existing pipeline server) or `RHOAI_CREATE_DSPA=true` (tests create the DSPA and the operator deploys the server).
 No `oc` CLI or kubeconfig needed.
 
-To avoid the "Unknown pytest.mark.integration" warning, register the mark in `pyproject.toml` under `[tool.pytest.ini_options]`:
-
-```ini
-markers = ["integration: AutoML (RHOAI) integration tests (deselect with -m 'not integration')"]
-```
-
 ## Pipeline server: existing vs dynamic
 
 You can run the integration tests in either of two ways:

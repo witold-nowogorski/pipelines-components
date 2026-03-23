@@ -19,7 +19,7 @@ import pytest
 
 def _skip_if_no_lite_integration_config():
     """Return True if integration config is not set (skip test)."""
-    from integration_config import DOCRAG_LITE_INTEGRATION_CONFIG
+    from .integration_config import DOCRAG_LITE_INTEGRATION_CONFIG
 
     return DOCRAG_LITE_INTEGRATION_CONFIG is None
 
@@ -102,7 +102,7 @@ def _pipeline_arguments_from_config(config):
     }
 
 
-@pytest.mark.functional
+@pytest.mark.integration
 @pytest.mark.skipif(
     _skip_if_no_lite_integration_config(),
     reason=("RHOAI integration env not set (set RHOAI_KFP_URL, RHOAI_TOKEN, pipeline params, see .env.example)"),

@@ -98,7 +98,7 @@ def _pipeline_arguments_from_config(config):
     }
 
 
-@pytest.mark.functional
+@pytest.mark.integration
 @pytest.mark.skipif(
     _skip_if_no_rag_integration_config(),
     reason=("RHOAI integration env not set (set RHOAI_KFP_URL, RHOAI_TOKEN, pipeline params, see .env.example)"),
