@@ -39,14 +39,47 @@ def documents_indexing(
     """
     import logging
     import os
+    import ssl
     import sys
     from pathlib import Path
 
+    import httpx
     from ai4rag.rag.chunking import LangChainChunker
     from ai4rag.rag.embedding.llama_stack import LSEmbeddingModel, LSEmbeddingParams
     from ai4rag.rag.vector_store.llama_stack import LSVectorStore
     from langchain_core.documents import Document
+    from llama_stack_client import APIConnectionError as LSAPIConnectionError
     from llama_stack_client import LlamaStackClient
+
+    def _is_ssl_error(exc: BaseException) -> bool:
+        """Check whether an exception (or its cause/context chain) is an SSL verification failure."""
+        seen = set()
+        current: BaseException | None = exc
+        while current is not None and id(current) not in seen:
+            seen.add(id(current))
+            msg = str(current).upper()
+            if "CERTIFICATE_VERIFY_FAILED" in msg or "SSL" in msg:
+                return True
+            current = current.__cause__ or current.__context__
+        return False
+
+    def _create_llama_stack_client(**kwargs) -> LlamaStackClient:
+        """Create LlamaStackClient, falling back to SSL-unverified if self-signed cert detected."""
+        client = LlamaStackClient(**kwargs)
+        try:
+            client.models.list()
+        except (ssl.SSLCertVerificationError, httpx.ConnectError, LSAPIConnectionError) as exc:
+            if _is_ssl_error(exc):
+                logger.warning(
+                    "SSL verification failed for LlamaStackClient — retrying with verify=False. ",
+                )
+                client = LlamaStackClient(
+                    **kwargs,
+                    http_client=httpx.Client(verify=False),
+                )
+            else:
+                raise
+        return client
 
     logger = logging.getLogger("Document Loader component logger")
     logger.setLevel(logging.INFO)
@@ -58,7 +91,7 @@ def documents_indexing(
 
     params = LSEmbeddingParams(**embedding_params)
 
-    client = LlamaStackClient(
+    client = _create_llama_stack_client(
         base_url=os.getenv("LLAMA_STACK_CLIENT_BASE_URL"),
         api_key=os.getenv("LLAMA_STACK_CLIENT_API_KEY"),
     )

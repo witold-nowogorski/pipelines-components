@@ -83,7 +83,9 @@ def rag_templates_optimization(
     except ImportError:
         pass
 
+    import logging
     import os
+    import ssl
     from collections import namedtuple
     from json import dump as json_dump
     from json import load as json_load
@@ -91,6 +93,7 @@ def rag_templates_optimization(
     from string import Formatter
     from typing import Any, Literal, Self
 
+    import httpx
     import pandas as pd
     import yaml as yml
     from ai4rag.core.experiment.experiment import AI4RAGExperiment
@@ -106,8 +109,60 @@ def rag_templates_optimization(
     from ai4rag.search_space.src.search_space import AI4RAGSearchSpace
     from ai4rag.utils.event_handler.event_handler import BaseEventHandler, LogLevel
     from langchain_core.documents import Document
+    from llama_stack_client import APIConnectionError as LSAPIConnectionError
     from llama_stack_client import LlamaStackClient
+    from openai import APIConnectionError as OAIAPIConnectionError
     from openai import OpenAI
+
+    _ssl_logger = logging.getLogger(__name__)
+
+    def _is_ssl_error(exc: BaseException) -> bool:
+        """Check whether an exception (or its cause/context chain) is an SSL verification failure."""
+        seen = set()
+        current: BaseException | None = exc
+        while current is not None and id(current) not in seen:
+            seen.add(id(current))
+            msg = str(current).upper()
+            if "CERTIFICATE_VERIFY_FAILED" in msg or "SSL" in msg:
+                return True
+            current = current.__cause__ or current.__context__
+        return False
+
+    def _create_openai_client(api_key: str, base_url: str) -> OpenAI:
+        """Create OpenAI client, falling back to SSL-unverified if self-signed cert detected."""
+        client = OpenAI(api_key=api_key, base_url=base_url)
+        try:
+            client.models.list()
+        except (ssl.SSLCertVerificationError, httpx.ConnectError, OAIAPIConnectionError) as exc:
+            if _is_ssl_error(exc):
+                _ssl_logger.warning(
+                    "SSL verification failed for %s — retrying with verify=False. ",
+                    base_url,
+                )
+                client = OpenAI(
+                    api_key=api_key,
+                    base_url=base_url,
+                    http_client=httpx.Client(verify=False),
+                )
+            else:
+                raise
+        return client
+
+    def _create_llama_stack_client(**kwargs) -> LlamaStackClient:
+        """Create LlamaStackClient, falling back to SSL-unverified if self-signed cert detected."""
+        client = LlamaStackClient(**kwargs)
+        try:
+            client.models.list()
+        except (ssl.SSLCertVerificationError, httpx.ConnectError, LSAPIConnectionError) as exc:
+            if _is_ssl_error(exc):
+                _ssl_logger.warning("SSL verification failed for LlamaStackClient — retrying with verify=False. ")
+                client = LlamaStackClient(
+                    **kwargs,
+                    http_client=httpx.Client(verify=False),
+                )
+            else:
+                raise
+        return client
 
     MAX_NUMBER_OF_RAG_PATTERNS = 8
     METRIC = "faithfulness"
@@ -508,7 +563,7 @@ def rag_templates_optimization(
     )
 
     if llama_stack_client_base_url and llama_stack_client_api_key:
-        client = Client(llama_stack=LlamaStackClient())
+        client = Client(llama_stack=_create_llama_stack_client())
     else:
         if not all(
             (
@@ -523,8 +578,8 @@ def rag_templates_optimization(
                 "have to be defined when running AutoRAG experiment using an in-memory vector store."
             )
         client = Client(
-            generation_model=OpenAI(api_key=chat_model_token, base_url=chat_model_url),
-            embedding_model=OpenAI(api_key=embedding_model_token, base_url=embedding_model_url),
+            generation_model=_create_openai_client(api_key=chat_model_token, base_url=chat_model_url),
+            embedding_model=_create_openai_client(api_key=embedding_model_token, base_url=embedding_model_url),
         )
         in_memory_vector_store_scenario = True
 
