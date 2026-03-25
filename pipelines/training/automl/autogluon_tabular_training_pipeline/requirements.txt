@@ -7,6 +7,7 @@ packaging==24.0
 pyproject-metadata==0.8.0
 tomli==2.0.1
 pathspec==0.11.2
+editables==0.5
 hatchling==1.18.0
 scikit-build==0.17.6
 patchelf==0.17.2.1
