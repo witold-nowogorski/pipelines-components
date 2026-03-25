@@ -1,3 +1,5 @@
+setuptools==75.1.0
+wheel==0.45.1
 boto3==1.42.69
 pandas==2.2.3
 lightgbm==4.6.0
