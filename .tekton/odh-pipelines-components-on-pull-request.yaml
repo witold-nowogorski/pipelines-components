@@ -19,34 +19,34 @@ metadata:
   namespace: open-data-hub-tenant
 spec:
   params:
-  - name: git-url
-    value: '{{source_url}}'
-  - name: revision
-    value: '{{revision}}'
-  - name: output-image
-    value: quay.io/opendatahub/odh-pipelines-components:odh-pr
-  - name: dockerfile
-    value: Dockerfile
-  - name: path-context
-    value: .
-  - name: additional-tags
-    value:
-    - 'odh-pr-{{revision}}'
-  - name: pipeline-type
-    value: pull-request
+    - name: git-url
+      value: '{{source_url}}'
+    - name: revision
+      value: '{{revision}}'
+    - name: output-image
+      value: quay.io/opendatahub/odh-pipelines-components:odh-pr
+    - name: dockerfile
+      value: Dockerfile
+    - name: path-context
+      value: .
+    - name: additional-tags
+      value:
+        - 'odh-pr-{{revision}}'
+    - name: pipeline-type
+      value: pull-request
   pipelineRef:
     resolver: git
     params:
-    - name: url
-      value: https://github.com/opendatahub-io/odh-konflux-central.git
-    - name: revision
-      value: main
-    - name: pathInRepo
-      value: pipeline/multi-arch-container-build.yaml
+      - name: url
+        value: https://github.com/opendatahub-io/odh-konflux-central.git
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipeline/multi-arch-container-build.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-odh-pipelines-components
   workspaces:
-  - name: git-auth
-    secret:
-      secretName: '{{ git_auth_secret }}'
+    - name: git-auth
+      secret:
+        secretName: '{{ git_auth_secret }}'
 status: {}
