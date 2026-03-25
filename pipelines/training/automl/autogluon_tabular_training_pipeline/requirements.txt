@@ -2,6 +2,7 @@ setuptools==75.1.0
 flit_core==3.12.0
 wheel==0.45.1
 # Build dependencies for pandas
+meson==1.2.3
 meson-python==0.13.1
 Cython==3.0.10
 numpy==1.26.4
