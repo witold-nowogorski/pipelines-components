@@ -6,6 +6,7 @@ meson==1.2.3
 packaging==24.0
 pyproject-metadata==0.8.0
 tomli==2.0.1
+hatchling==1.18.0
 scikit-build==0.17.6
 patchelf==0.17.2.1
 meson-python==0.15.0
