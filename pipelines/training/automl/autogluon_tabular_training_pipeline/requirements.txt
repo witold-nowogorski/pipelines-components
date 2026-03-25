@@ -4,6 +4,7 @@ wheel==0.45.1
 # Build dependencies for pandas
 meson==1.2.3
 pyproject-metadata==0.8.0
+tomli==2.0.1
 meson-python==0.13.1
 Cython==3.0.10
 numpy==1.26.4
