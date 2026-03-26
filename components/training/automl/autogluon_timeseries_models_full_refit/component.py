@@ -229,6 +229,9 @@ def autogluon_timeseries_models_full_refit(
             "<REPLACE_PIPELINE_NAME>": pipeline_name,
             "<REPLACE_MODEL_NAME>": model_name_full,
             "<REPLACE_SAMPLE_ROW>": str(sample_row_list),
+            "<REPLACE_ID_COLUMN>": model_config.get("id_column"),
+            "<REPLACE_TIMESTAMP_COLUMN>": model_config.get("timestamp_column"),
+            "<REPLACE_KNOWN_COVARIATES_NAMES>": str(model_config.get("known_covariates_names") or []),
         }
         notebook = replace_placeholder_in_notebook(notebook, replacements)
 

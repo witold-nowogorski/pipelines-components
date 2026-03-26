@@ -24,6 +24,9 @@ def _write_notebook_template(tmp_path):
                     'run = "<REPLACE_RUN_ID>"\n',
                     'model = "<REPLACE_MODEL_NAME>"\n',
                     "row = <REPLACE_SAMPLE_ROW>\n",
+                    'id_col = "<REPLACE_ID_COLUMN>"\n',
+                    'ts_col = "<REPLACE_TIMESTAMP_COLUMN>"\n',
+                    "covariates = <REPLACE_KNOWN_COVARIATES_NAMES>\n",
                 ],
             }
         ],
@@ -216,6 +219,9 @@ class TestTimeseriesModelsFullRefitUnitTests:
         assert "my-pipeline-run-123" not in notebook_text
         assert "DeepAR_FULL" in notebook_text
         assert "run-456" in notebook_text
+        assert "item_id" in notebook_text
+        assert "timestamp" in notebook_text
+        assert "[]" in notebook_text
 
         assert model_artifact.metadata["display_name"] == "DeepAR_FULL"
         assert model_artifact.metadata["context"]["pipeline_info"]["pipeline_name"] == "my-pipeline-run"
