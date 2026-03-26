@@ -17,6 +17,7 @@ hatchling==1.18.0
 hatch-fancy-pypi-readme==24.1.0
 hatch-vcs==0.4.0
 distro==1.8.0
+scikit-build-core==0.10.7
 cmake==3.30.5
 scikit-build==0.17.6
 patchelf==0.17.2.1
