@@ -8,5 +8,5 @@ COPY pipelines/training/automl/autogluon_tabular_training_pipeline/requirements.
      /tmp/
 
 ## Ensure build isolation
-RUN pip install --index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4/cpu-ubi9-test/simple/ --no-cache-dir -r /tmp/requirements.txt
-RUN pip install --index-url https://pypi.org/simple --no-cache-dir -r /tmp/requirements-pypi.txt
+RUN pip install --index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4/cpu-ubi9-test/simple/ --no-cache-dir -r /tmp/requirements.txt --report install-report.json
+RUN pip install --index-url https://pypi.org/simple --no-cache-dir -r /tmp/requirements-pypi.txt --report install-report-pypi.json
