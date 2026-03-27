@@ -58,6 +58,8 @@ spec:
             ]
           }
         ]
+    - name: prefetch-log-level
+      value: "debug"
     - name: build-image-index
       value: true
     - name: enable-slack-failure-notification
