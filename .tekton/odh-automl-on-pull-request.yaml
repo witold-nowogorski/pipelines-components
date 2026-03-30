@@ -63,6 +63,9 @@ spec:
             "path": "pipelines/training/automl/autogluon_tabular_training_pipeline",
             "requirements_files": [
               "requirements-pypi.txt"
+            ],
+            "requirements_build_files": [
+              "build-requirements-pypi.txt"
             ]
           }
         ]

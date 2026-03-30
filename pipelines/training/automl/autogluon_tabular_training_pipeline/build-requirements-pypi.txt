@@ -1,0 +1,8 @@
+hatchling
+hatch
+setuptools>=70.1.0
+jupyter_packaging~=0.10.0
+jupyterlab==3.5.4
+cmake==3.31.10
+conan==2.4.1
+cython==3.0.10
