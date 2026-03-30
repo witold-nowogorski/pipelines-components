@@ -21,31 +21,20 @@ def text_extraction(
     """
     import json
     import logging
+    import multiprocessing
     import os
     import sys
     import tempfile
-    from concurrent.futures import ThreadPoolExecutor
-    from functools import partial
+    import threading
+    from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
     from pathlib import Path
 
     import boto3
     from botocore.exceptions import SSLError
-    from docling.datamodel.accelerator_options import AcceleratorOptions
-    from docling.datamodel.base_models import InputFormat
-    from docling.datamodel.pipeline_options import PaginatedPipelineOptions, PdfPipelineOptions
-    from docling.document_converter import (
-        DocumentConverter,
-        HTMLFormatOption,
-        MarkdownFormatOption,
-        PdfFormatOption,
-        PowerpointFormatOption,
-        WordFormatOption,
-    )
 
     DOCUMENTS_DESCRIPTOR_FILENAME = "documents_descriptor.json"
     SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".md", ".html", ".txt"}
     DOWNLOAD_MAX_WORKERS = 8
-    BATCH_SIZE = 10
 
     logger = logging.getLogger("Text Extraction component logger")
     logger.setLevel(logging.INFO)
@@ -87,118 +76,154 @@ def text_extraction(
             verify=verify,
         )
 
-    s3_client = _make_s3_client()
+    _thread_local = threading.local()
 
-    def download_document(doc: dict, base_path: Path) -> bool:
-        nonlocal s3_client
+    def _get_thread_s3_client():
+        if not hasattr(_thread_local, "s3_client"):
+            _thread_local.s3_client = _make_s3_client()
+        return _thread_local.s3_client
+
+    def download_document(doc: dict, base_path: Path) -> Path:
         key = doc["key"]
         local_path = base_path / key
         local_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             logger.info("Downloading %s", key)
-            s3_client.download_file(bucket, key, str(local_path))
-            return True
+            _get_thread_s3_client().download_file(bucket, key, str(local_path))
+            return local_path
         except SSLError:
             logger.warning(
                 "SSL error when downloading %s, retrying with verify=False",
                 key,
             )
-            s3_client = _make_s3_client(verify=False)
-            s3_client.download_file(bucket, key, str(local_path))
-            return True
+            _thread_local.s3_client = _make_s3_client(verify=False)
+            _thread_local.s3_client.download_file(bucket, key, str(local_path))
+            return local_path
         except Exception as e:
             logger.error("Failed to fetch %s: %s", key, e)
             raise
 
-    def process_document(file_path_str: str, output_dir_str: str) -> bool:
+    def _proc_initializer() -> None:
+        """Runs once per worker process: creates a single DocumentConverter."""
+        import logging as _log_mod
+        import sys as _sys_mod
+
+        from docling.datamodel.accelerator_options import AcceleratorOptions
+        from docling.datamodel.base_models import InputFormat
+        from docling.datamodel.pipeline_options import PaginatedPipelineOptions, PdfPipelineOptions
+        from docling.document_converter import (
+            DocumentConverter,
+            HTMLFormatOption,
+            MarkdownFormatOption,
+            PdfFormatOption,
+            PowerpointFormatOption,
+            WordFormatOption,
+        )
+
+        _wlog = _log_mod.getLogger("text_extraction_worker")
+        _wlog.setLevel(_log_mod.INFO)
+        if not _wlog.handlers:
+            _wlog.addHandler(_log_mod.StreamHandler(_sys_mod.stdout))
+
+        pdf_opts = PdfPipelineOptions()
+        pdf_opts.do_ocr = False
+        pdf_opts.do_table_structure = False
+        pdf_opts.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
+
+        pag_opts = PaginatedPipelineOptions()
+        pag_opts.generate_page_images = False
+        pag_opts.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
+
+        _sys_mod.modules["__main__"]._worker_converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_opts),
+                InputFormat.DOCX: WordFormatOption(pipeline_options=pag_opts),
+                InputFormat.PPTX: PowerpointFormatOption(pipeline_options=pag_opts),
+                InputFormat.HTML: HTMLFormatOption(),
+                InputFormat.MD: MarkdownFormatOption(),
+            }
+        )
+
+    def _proc_process_document(file_path_str: str, output_dir_str: str) -> bool:
+        """Process one document using the worker-process-local converter."""
+        import logging as _log_mod
+        import sys as _sys_mod
+        from pathlib import Path as _Path
+
+        _wlog = _log_mod.getLogger("text_extraction_worker")
         try:
-            path = Path(file_path_str)
-            out_dir = Path(output_dir_str)
+            path = _Path(file_path_str)
+            out_dir = _Path(output_dir_str)
             output_file = out_dir / f"{path.name}.md"
 
-            # Handle .txt files directly (docling doesn't support plain text as input format)
             if path.suffix.lower() == ".txt":
-                logger.info("Processing TXT file %s (direct read)", path.name)
-                text_content = path.read_text(encoding="utf-8")
-                # Save as markdown (plain text is valid markdown)
-                output_file.write_text(text_content, encoding="utf-8")
-                logger.info("Successfully processed %s -> %s", path.name, output_file.name)
+                _wlog.info("Processing TXT file %s (direct read)", path.name)
+                output_file.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
                 return True
 
-            # For all other formats, use docling
-            # Configure pipeline options for PDF
-            pdf_pipeline_options = PdfPipelineOptions()
-            pdf_pipeline_options.do_ocr = False
-            pdf_pipeline_options.do_table_structure = False
-            pdf_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
-
-            # Configure pipeline options for paginated documents (DOCX, PPTX)
-            paginated_pipeline_options = PaginatedPipelineOptions()
-            paginated_pipeline_options.generate_page_images = False
-            paginated_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
-
-            # Configure DocumentConverter with format options for all supported formats
-            converter = DocumentConverter(
-                format_options={
-                    InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_pipeline_options),
-                    InputFormat.DOCX: WordFormatOption(pipeline_options=paginated_pipeline_options),
-                    InputFormat.PPTX: PowerpointFormatOption(pipeline_options=paginated_pipeline_options),
-                    InputFormat.HTML: HTMLFormatOption(),
-                    InputFormat.MD: MarkdownFormatOption(),
-                }
-            )
-
-            logger.debug("Processing %s with format %s using docling", path.name, path.suffix)
+            converter = _sys_mod.modules["__main__"]._worker_converter
+            _wlog.debug("Processing %s with docling", path.name)
             result = converter.convert(path)
-            markdown_content = result.document.export_to_markdown()
-            output_file.write_text(markdown_content, encoding="utf-8")
-            logger.debug("Successfully processed %s -> %s", path.name, output_file.name)
+            output_file.write_text(result.document.export_to_markdown(), encoding="utf-8")
+            _wlog.debug("Successfully processed %s", path.name)
             return True
         except Exception as e:
-            logger.error("Failed to process %s: %s", file_path_str, e)
+            _log_mod.getLogger("text_extraction_worker").error("Failed to process %s: %s", file_path_str, e)
             return False
+
+    _proc_initializer.__qualname__ = "_proc_initializer"
+    _proc_initializer.__module__ = "__main__"
+    _proc_process_document.__qualname__ = "_proc_process_document"
+    _proc_process_document.__module__ = "__main__"
+    _main_mod = sys.modules["__main__"]
+    _main_mod._proc_initializer = _proc_initializer
+    _main_mod._proc_process_document = _proc_process_document
 
     output_dir = Path(extracted_text.path)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    all_results = []
-    batches = [documents[i : i + BATCH_SIZE] for i in range(0, len(documents), BATCH_SIZE)] if documents else []
+    if not documents:
+        logger.info("No documents to process.")
+        return
 
-    logger.info("Starting text extraction for %d documents in %d batch(es).", len(documents), len(batches))
+    logger.info("Starting text extraction for %d documents.", len(documents))
 
-    for batch_idx, batch_docs in enumerate(batches):
-        logger.info("Processing batch %d/%d (%d documents).", batch_idx + 1, len(batches), len(batch_docs))
+    n_workers = os.cpu_count() or 1
 
-        with tempfile.TemporaryDirectory() as download_dir:
-            batch_download_path = Path(download_dir)
-            download_workers = min(DOWNLOAD_MAX_WORKERS, len(batch_docs))
-            download_fn = partial(download_document, base_path=batch_download_path)
-            with ThreadPoolExecutor(max_workers=download_workers) as executor:
-                list(executor.map(download_fn, batch_docs))
+    with tempfile.TemporaryDirectory() as download_dir:
+        download_path = Path(download_dir)
 
-            files_to_process = [
-                f for f in batch_download_path.rglob("*") if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
-            ]
+        with ProcessPoolExecutor(
+            max_workers=n_workers,
+            mp_context=multiprocessing.get_context("fork"),
+            initializer=_main_mod._proc_initializer,
+        ) as process_pool:
+            process_futures = []
 
-            if not files_to_process:
-                logger.warning(
-                    "No supported files found in batch %d (downloaded %d files)", batch_idx + 1, len(batch_docs)
-                )
-                continue
+            with ThreadPoolExecutor(max_workers=DOWNLOAD_MAX_WORKERS) as dl_pool:
+                dl_futures = {dl_pool.submit(download_document, doc, download_path): doc for doc in documents}
 
-            logger.debug("Found %d files to process in batch %d", len(files_to_process), batch_idx + 1)
-            process_workers = min(os.cpu_count() or 1, len(files_to_process))
-            worker_fn = partial(process_document, output_dir_str=str(output_dir))
-            with ThreadPoolExecutor(max_workers=process_workers) as executor:
-                batch_results = list(executor.map(worker_fn, [str(f) for f in files_to_process]))
-            all_results.extend(batch_results)
+                for dl_future in as_completed(dl_futures):
+                    try:
+                        local_path = dl_future.result()
+                    except Exception:
+                        continue
 
-    results = all_results
-    processed_count = sum(1 for r in results if r)
-    error_count = len(results) - processed_count
+                    if local_path.suffix.lower() in SUPPORTED_EXTENSIONS:
+                        pf = process_pool.submit(
+                            _main_mod._proc_process_document,
+                            str(local_path),
+                            str(output_dir),
+                        )
+                        process_futures.append(pf)
+                    else:
+                        logger.warning("Unsupported format, skipping: %s", local_path)
 
-    summary = f"Text extraction completed. Total processed: {processed_count}, Errors: {error_count}."
-    logger.info(summary)
+            all_results = [f.result() for f in process_futures]
+
+    processed_count = sum(1 for r in all_results if r)
+    error_count = len(all_results) - processed_count
+    logger.info("Text extraction completed. Total processed: %d, Errors: %d.", processed_count, error_count)
 
 
 if __name__ == "__main__":
