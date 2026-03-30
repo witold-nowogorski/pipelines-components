@@ -1,4 +1,4 @@
-catboost==1.2.10
+#catboost==1.2.10
 graphviz==0.21
 plotly==6.6.0
 narwhals==2.18.1
