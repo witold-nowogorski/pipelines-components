@@ -57,17 +57,17 @@ spec:
               "autogluon_tabular_training_pipeline/requirements.txt"
             ],
             "binary": {"arch": ":all:"}
-          },
-          {
-            "type": "pip",
-            "path": "pipelines/training/automl/autogluon_tabular_training_pipeline",
-            "requirements_files": [
-              "requirements-pypi.txt"
-            ],
-            "requirements_build_files": [
-              "build-requirements-pypi.txt"
-            ]
           }
+          # {
+          #   "type": "pip",
+          #   "path": "pipelines/training/automl/autogluon_tabular_training_pipeline",
+          #   "requirements_files": [
+          #     "requirements-pypi.txt"
+          #   ],
+          #   "requirements_build_files": [
+          #     "build-requirements-pypi.txt"
+          #   ]
+          # }
         ]
     - name: prefetch-log-level
       value: "debug"
