@@ -16,7 +16,10 @@ from pathlib import Path
 
 def _ensure_dotenv_loaded() -> None:
     """Load .env from repo root (cwd) and from this directory (import guard: not at module scope)."""
-    from dotenv import load_dotenv
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return None
 
     load_dotenv()
     load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
