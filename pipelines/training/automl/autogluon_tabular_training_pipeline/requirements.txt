@@ -105,3 +105,4 @@ beartype==0.22.9
 python-multipart==0.0.22
 setuptools==80.10.2
 wrapt==2.1.2
+uv==0.11.0
