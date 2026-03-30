@@ -75,33 +75,6 @@ flit-core==3.12.0
     #   wheel
 h11==0.16.0
     # via httpcore
-hatch-fancy-pypi-readme==25.1.0
-    # via
-    #   httpcore
-    #   httpx
-hatch-vcs==0.5.0
-    # via
-    #   filelock
-    #   hatch
-    #   platformdirs
-    #   python-discovery
-    #   virtualenv
-hatch==1.16.5
-    # via plotly
-hatchling==1.29.0
-    # via
-    #   filelock
-    #   hatch
-    #   hatch-fancy-pypi-readme
-    #   hatch-vcs
-    #   httpcore
-    #   httpx
-    #   narwhals
-    #   platformdirs
-    #   pygments
-    #   python-discovery
-    #   userpath
-    #   virtualenv
 httpcore==1.0.9
     # via httpx
 httpx==0.28.1
@@ -205,8 +178,6 @@ trove-classifiers==2026.1.14.14
 typing-extensions==4.15.0
     # via anyio
 userpath==1.9.2
-    # via hatch
-uv==0.11.2
     # via hatch
 vcs-versioning==1.1.1
     # via setuptools-scm
