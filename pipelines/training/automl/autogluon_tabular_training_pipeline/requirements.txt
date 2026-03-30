@@ -32,7 +32,7 @@ murmurhash==1.0.15
 preshed==3.0.13
 pydantic==2.12.5
 pydantic_core==2.41.5
-requests==2.33.0
+requests==2.32.5
 charset-normalizer==3.4.6
 idna==3.11
 spacy-legacy==3.0.12
