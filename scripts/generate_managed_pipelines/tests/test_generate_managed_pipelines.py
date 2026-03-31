@@ -72,9 +72,7 @@ def test_from_managed_pipeline_dir_invalid_metadata_raises(tmp_path: Path, metad
         ("stable", "General Availability"),
     ],
 )
-def test_stability_mapped_to_display_labels(
-    tmp_path: Path, metadata_stability: str, expected_display: str
-):
+def test_stability_mapped_to_display_labels(tmp_path: Path, metadata_stability: str, expected_display: str):
     """JSON stability uses product labels, not metadata keywords."""
     repo = tmp_path
     pipe_dir = repo / "pipelines" / "x" / "p"

@@ -26,7 +26,7 @@ def my_pipeline():
         """Extract description built from implicit string concatenation."""
         pipeline_py = tmp_path / "pipeline.py"
         pipeline_py.write_text(
-            '''from kfp import dsl
+            """from kfp import dsl
 
 @dsl.pipeline(
     name="p",
@@ -37,7 +37,7 @@ def my_pipeline():
 )
 def my_pipeline():
     pass
-'''
+"""
         )
         assert extract_pipeline_description_from_file(pipeline_py) == "Part one part two"
 
@@ -62,7 +62,7 @@ def my_pipeline():
         """When function_name is set, use that pipeline function."""
         pipeline_py = tmp_path / "pipeline.py"
         pipeline_py.write_text(
-            '''from kfp import dsl
+            """from kfp import dsl
 
 @dsl.pipeline(description="first")
 def first_pipeline():
@@ -71,6 +71,6 @@ def first_pipeline():
 @dsl.pipeline(description="second")
 def second_pipeline():
     pass
-'''
+"""
         )
         assert extract_pipeline_description_from_file(pipeline_py, function_name="second_pipeline") == "second"
