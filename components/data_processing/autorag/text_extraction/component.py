@@ -3,104 +3,6 @@ from kfp import dsl
 _mp_worker_converter = None
 
 
-def _mp_worker_initializer() -> None:
-    """Runs once per worker process: creates a single DocumentConverter."""
-    global _mp_worker_converter
-    import logging as _log_mod
-    import os as _os_mod
-    import sys as _sys_mod
-    import time as _time_mod
-
-    from docling.datamodel.accelerator_options import AcceleratorOptions
-    from docling.datamodel.base_models import InputFormat
-    from docling.datamodel.pipeline_options import PaginatedPipelineOptions, PdfPipelineOptions
-    from docling.document_converter import (
-        DocumentConverter,
-        HTMLFormatOption,
-        MarkdownFormatOption,
-        PdfFormatOption,
-        PowerpointFormatOption,
-        WordFormatOption,
-    )
-
-    _wlog = _log_mod.getLogger("text_extraction_worker")
-    _wlog.setLevel(_log_mod.INFO)
-    if not _wlog.handlers:
-        _wlog.addHandler(_log_mod.StreamHandler(_sys_mod.stdout))
-
-    _pid = _os_mod.getpid()
-    _t0 = _time_mod.perf_counter()
-    _wlog.info(
-        "Worker pid=%s: loading DocumentConverter.",
-        _pid,
-    )
-
-    pdf_opts = PdfPipelineOptions()
-    pdf_opts.do_ocr = False
-    pdf_opts.do_table_structure = False
-    pdf_opts.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
-
-    pag_opts = PaginatedPipelineOptions()
-    pag_opts.generate_page_images = False
-    pag_opts.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
-
-    _mp_worker_converter = DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_opts),
-            InputFormat.DOCX: WordFormatOption(pipeline_options=pag_opts),
-            InputFormat.PPTX: PowerpointFormatOption(pipeline_options=pag_opts),
-            InputFormat.HTML: HTMLFormatOption(),
-            InputFormat.MD: MarkdownFormatOption(),
-        }
-    )
-    _wlog.info("Worker pid=%s: DocumentConverter ready (%.1fs)", _pid, _time_mod.perf_counter() - _t0)
-
-
-def _mp_worker_process_document(file_path_str: str, output_dir_str: str) -> bool:
-    """Process one document using the worker-process-local converter."""
-    import logging as _log_mod
-    import os as _os_mod
-    import time as _time_mod
-    from pathlib import Path as _Path
-
-    _wlog = _log_mod.getLogger("text_extraction_worker")
-    _t0 = _time_mod.perf_counter()
-    try:
-        path = _Path(file_path_str)
-        out_dir = _Path(output_dir_str)
-        output_file = out_dir / f"{path.name}.md"
-
-        if path.suffix.lower() == ".txt":
-            _wlog.info("pid=%s TXT read start: %s", _os_mod.getpid(), path.name)
-            output_file.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-            _wlog.info("pid=%s TXT done: %s (%.1fs)", _os_mod.getpid(), path.name, _time_mod.perf_counter() - _t0)
-            return True
-
-        if _mp_worker_converter is None:
-            raise RuntimeError("worker initializer did not set _mp_worker_converter")
-
-        _sz_mib = path.stat().st_size / (1024 * 1024) if path.exists() else 0.0
-        _wlog.info(
-            "pid=%s docling convert start: %s (%.1f MiB on disk)",
-            _os_mod.getpid(),
-            path.name,
-            _sz_mib,
-        )
-        result = _mp_worker_converter.convert(path)
-        output_file.write_text(result.document.export_to_markdown(), encoding="utf-8")
-        _wlog.info(
-            "pid=%s docling convert done: %s -> %s (%.1fs)",
-            _os_mod.getpid(),
-            path.name,
-            output_file.name,
-            _time_mod.perf_counter() - _t0,
-        )
-        return True
-    except Exception as e:
-        _log_mod.getLogger("text_extraction_worker").error("Failed to process %s: %s", file_path_str, e)
-        return False
-
-
 @dsl.component(
     base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",
     packages_to_install=["docling[ort]"],
@@ -132,6 +34,102 @@ def text_extraction(
 
     import boto3
     from botocore.exceptions import SSLError
+
+    def _mp_worker_initializer() -> None:
+        """Runs once per worker process: creates a single DocumentConverter."""
+        global _mp_worker_converter
+        import logging as _log_mod
+        import os as _os_mod
+        import sys as _sys_mod
+        import time as _time_mod
+
+        from docling.datamodel.accelerator_options import AcceleratorOptions
+        from docling.datamodel.base_models import InputFormat
+        from docling.datamodel.pipeline_options import PaginatedPipelineOptions, PdfPipelineOptions
+        from docling.document_converter import (
+            DocumentConverter,
+            HTMLFormatOption,
+            MarkdownFormatOption,
+            PdfFormatOption,
+            PowerpointFormatOption,
+            WordFormatOption,
+        )
+
+        _wlog = _log_mod.getLogger("text_extraction_worker")
+        _wlog.setLevel(_log_mod.INFO)
+        if not _wlog.handlers:
+            _wlog.addHandler(_log_mod.StreamHandler(_sys_mod.stdout))
+
+        _pid = _os_mod.getpid()
+        _t0 = _time_mod.perf_counter()
+        _wlog.info(
+            "Worker pid=%s: loading DocumentConverter.",
+            _pid,
+        )
+
+        pdf_opts = PdfPipelineOptions()
+        pdf_opts.do_ocr = False
+        pdf_opts.do_table_structure = False
+        pdf_opts.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
+
+        pag_opts = PaginatedPipelineOptions()
+        pag_opts.generate_page_images = False
+        pag_opts.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
+
+        _mp_worker_converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_opts),
+                InputFormat.DOCX: WordFormatOption(pipeline_options=pag_opts),
+                InputFormat.PPTX: PowerpointFormatOption(pipeline_options=pag_opts),
+                InputFormat.HTML: HTMLFormatOption(),
+                InputFormat.MD: MarkdownFormatOption(),
+            }
+        )
+        _wlog.info("Worker pid=%s: DocumentConverter ready (%.1fs)", _pid, _time_mod.perf_counter() - _t0)
+
+    def _mp_worker_process_document(file_path_str: str, output_dir_str: str) -> bool:
+        """Process one document using the worker-process-local converter."""
+        import logging as _log_mod
+        import os as _os_mod
+        import time as _time_mod
+        from pathlib import Path as _Path
+
+        _wlog = _log_mod.getLogger("text_extraction_worker")
+        _t0 = _time_mod.perf_counter()
+        try:
+            path = _Path(file_path_str)
+            out_dir = _Path(output_dir_str)
+            output_file = out_dir / f"{path.name}.md"
+
+            if path.suffix.lower() == ".txt":
+                _wlog.info("pid=%s TXT read start: %s", _os_mod.getpid(), path.name)
+                output_file.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+                _wlog.info("pid=%s TXT done: %s (%.1fs)", _os_mod.getpid(), path.name, _time_mod.perf_counter() - _t0)
+                return True
+
+            if _mp_worker_converter is None:
+                raise RuntimeError("worker initializer did not set _mp_worker_converter")
+
+            _sz_mib = path.stat().st_size / (1024 * 1024) if path.exists() else 0.0
+            _wlog.info(
+                "pid=%s docling convert start: %s (%.1f MiB on disk)",
+                _os_mod.getpid(),
+                path.name,
+                _sz_mib,
+            )
+            result = _mp_worker_converter.convert(path)
+            output_file.write_text(result.document.export_to_markdown(), encoding="utf-8")
+            _wlog.info(
+                "pid=%s docling convert done: %s -> %s (%.1fs)",
+                _os_mod.getpid(),
+                path.name,
+                output_file.name,
+                _time_mod.perf_counter() - _t0,
+            )
+            return True
+        except Exception as e:
+            _log_mod.getLogger("text_extraction_worker").error("Failed to process %s: %s", file_path_str, e)
+            return False
 
     DOCUMENTS_DESCRIPTOR_FILENAME = "documents_descriptor.json"
     SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".md", ".html", ".txt"}
