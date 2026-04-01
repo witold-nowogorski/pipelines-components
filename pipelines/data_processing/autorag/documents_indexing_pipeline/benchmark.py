@@ -326,61 +326,58 @@ def run(
         work_dir = Path(work_dir)
         work_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        results: list[StepResult] = []
 
-        # ── Step 1: documents_discovery ────────────────────────────────────
-        print(f"[1/3] Running documents_discovery  (bucket={bucket!r}, prefix={prefix!r})")
-        result = _step_discovery(work_dir, bucket, prefix, sampling_enabled, sampling_max_size)
-        results.append(result)
-        if not result.success:
-            print(f"      FAILED: {result.error}")
-            return results
-        print(f"      OK  ({_fmt_duration(result.duration_s)}, {result.info})")
+    results: list[StepResult] = []
 
-        # ── Step 2: text_extraction ────────────────────────────────────────
-        print("[2/3] Running text_extraction")
-        result = _step_extraction(work_dir)
-        results.append(result)
-        if not result.success:
-            print(f"      FAILED: {result.error}")
-            return results
-        print(f"      OK  ({_fmt_duration(result.duration_s)}, {result.info})")
-
-        # ── Step 3: documents_indexing (optional) ──────────────────────────
-        llama_url = os.environ.get("LLAMA_STACK_CLIENT_BASE_URL")
-        if skip_indexing:
-            reason = "--skip-indexing flag"
-        elif not llama_url:
-            reason = "LLAMA_STACK_CLIENT_BASE_URL not set"
-        elif not embedding_model_id:
-            reason = "--embedding-model-id not provided"
-        else:
-            reason = None
-
-        if reason:
-            print(f"[3/3] Skipping documents_indexing  ({reason})")
-            results.append(StepResult(name="documents_indexing", skipped=True, success=True))
-        else:
-            print(f"[3/3] Running documents_indexing  (model={embedding_model_id!r})")
-            result = _step_indexing(
-                work_dir,
-                embedding_model_id,
-                llama_stack_vector_database_id,
-                chunk_size,
-                chunk_overlap,
-                batch_size,
-            )
-            results.append(result)
-            if not result.success:
-                print(f"      FAILED: {result.error}")
-            else:
-                print(f"      OK  ({_fmt_duration(result.duration_s)})")
-
+    # ── Step 1: documents_discovery ────────────────────────────────────
+    print(f"[1/3] Running documents_discovery  (bucket={bucket!r}, prefix={prefix!r})")
+    result = _step_discovery(work_dir, bucket, prefix, sampling_enabled, sampling_max_size)
+    results.append(result)
+    if not result.success:
+        print(f"      FAILED: {result.error}")
         return results
-    finally:
-        if managed:
-            shutil.rmtree(work_dir, ignore_errors=True)
+    print(f"      OK  ({_fmt_duration(result.duration_s)}, {result.info})")
+
+    # ── Step 2: text_extraction ────────────────────────────────────────
+    print("[2/3] Running text_extraction")
+    result = _step_extraction(work_dir)
+    results.append(result)
+    if not result.success:
+        print(f"      FAILED: {result.error}")
+        return results
+    print(f"      OK  ({_fmt_duration(result.duration_s)}, {result.info})")
+
+    # ── Step 3: documents_indexing (optional) ──────────────────────────
+    llama_url = os.environ.get("LLAMA_STACK_CLIENT_BASE_URL")
+    if skip_indexing:
+        reason = "--skip-indexing flag"
+    elif not llama_url:
+        reason = "LLAMA_STACK_CLIENT_BASE_URL not set"
+    elif not embedding_model_id:
+        reason = "--embedding-model-id not provided"
+    else:
+        reason = None
+
+    if reason:
+        print(f"[3/3] Skipping documents_indexing  ({reason})")
+        results.append(StepResult(name="documents_indexing", skipped=True, success=True))
+    else:
+        print(f"[3/3] Running documents_indexing  (model={embedding_model_id!r})")
+        result = _step_indexing(
+            work_dir,
+            embedding_model_id,
+            llama_stack_vector_database_id,
+            chunk_size,
+            chunk_overlap,
+            batch_size,
+        )
+        results.append(result)
+        if not result.success:
+            print(f"      FAILED: {result.error}")
+        else:
+            print(f"      OK  ({_fmt_duration(result.duration_s)})")
+
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -476,11 +473,11 @@ def main() -> None:
     prefix = "math-docs-dataset"
     sampling_enabled = True
     work_dir = ""
-    sampling_max_sizes_gib = [0.001, 0.01, 0.1, 0.3, 0.5, 0.7, 1.0, 1.0, 0.5, 0.2, 0.3, 0.5, 1.0]
-    json_output_dir = Path("benchmark_run_json_2_2")
+    sampling_max_sizes_gib = [0.01, 0.3, 0.5, 0.7, 1.0, 1.0, 0.5, 0.2, 0.3, 0.5, 1.0]
+    json_output_dir = Path("benchmark_run_json_4")
     skip_indexing = False
     embedding_model_id = "vllm-embedding/bge-m3"
-    llama_stack_vector_database_id = "milvus"
+    llama_stack_vector_database_id = "ls_milvus"
     chunk_size = 1024
     chunk_overlap = 128
     batch_size = 10
@@ -513,33 +510,33 @@ def main() -> None:
             "json_path": str(json_path),
         }
 
-        try:
-            results = run(
-                bucket=bucket,
-                prefix=prefix,
-                work_dir=Path(work_dir) if work_dir else None,
-                sampling_enabled=sampling_enabled,
-                sampling_max_size=sampling_max_size,
-                skip_indexing=skip_indexing,
-                embedding_model_id=embedding_model_id,
-                llama_stack_vector_database_id=llama_stack_vector_database_id,
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                batch_size=batch_size,
-            )
-            payload["iteration_exception"] = None
-            payload["steps"] = _step_results_to_jsonable(results)
-            step_failed = [r for r in results if not r.skipped and not r.success]
-            payload["iteration_logical_success"] = len(step_failed) == 0
-            if step_failed:
-                any_iteration_failed = True
-            print_report(results)
-        except Exception as exc:
-            payload["iteration_exception"] = repr(exc)
-            payload["steps"] = None
-            payload["iteration_logical_success"] = False
+        # try:
+        results = run(
+            bucket=bucket,
+            prefix=prefix,
+            work_dir=Path(work_dir) if work_dir else None,
+            sampling_enabled=sampling_enabled,
+            sampling_max_size=sampling_max_size,
+            skip_indexing=skip_indexing,
+            embedding_model_id=embedding_model_id,
+            llama_stack_vector_database_id=llama_stack_vector_database_id,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            batch_size=batch_size,
+        )
+        payload["iteration_exception"] = None
+        payload["steps"] = _step_results_to_jsonable(results)
+        step_failed = [r for r in results if not r.skipped and not r.success]
+        payload["iteration_logical_success"] = len(step_failed) == 0
+        if step_failed:
             any_iteration_failed = True
-            print(f"      ITERATION CRASHED: {exc!r}", file=sys.stderr)
+        print_report(results)
+        # except Exception as exc:
+        #     payload["iteration_exception"] = repr(exc)
+        #     payload["steps"] = None
+        #     payload["iteration_logical_success"] = False
+        #     any_iteration_failed = True
+        #     print(f"      ITERATION CRASHED: {exc!r}", file=sys.stderr)
 
         payload["finished_utc"] = datetime.now(timezone.utc).isoformat()
         _save_benchmark_json(json_path, payload)
