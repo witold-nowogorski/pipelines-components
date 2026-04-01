@@ -11,7 +11,7 @@ def text_extraction(
     documents_descriptor: dsl.Input[dsl.Artifact],
     extracted_text: dsl.Output[dsl.Artifact],
     error_tolerance: Optional[float] = None,
-    max_extraction_workers: Optional[int] = 4,
+    max_extraction_workers: Optional[int] = None,
 ):
     """Text Extraction component.
 
@@ -60,6 +60,7 @@ def text_extraction(
 
     logger = logging.getLogger("Text Extraction component logger")
     logger.setLevel(logging.INFO)
+    logger.propagate = False
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(handler)
@@ -140,6 +141,7 @@ def text_extraction(
 
         worker_log = logging.getLogger("text_extraction_worker")
         worker_log.setLevel(logging.INFO)
+        worker_log.propagate = False
         if not worker_log.handlers:
             worker_log.addHandler(logging.StreamHandler(sys.stdout))
 
@@ -150,11 +152,11 @@ def text_extraction(
         pdf_pipeline_options = PdfPipelineOptions()
         pdf_pipeline_options.do_ocr = False
         pdf_pipeline_options.do_table_structure = False
-        pdf_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
+        pdf_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=2)
 
         paginated_pipeline_options = PaginatedPipelineOptions()
         paginated_pipeline_options.generate_page_images = False
-        paginated_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=1)
+        paginated_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=2)
 
         sys.modules[__name__]._mp_worker_converter = DocumentConverter(
             format_options={
@@ -318,7 +320,9 @@ def text_extraction(
         logger.info("No documents to process.")
         return
 
-    effective_workers = max_extraction_workers if max_extraction_workers is not None else os.cpu_count() or 1
+    documents = sorted(documents, key=lambda d: d.get("size_bytes", 0), reverse=True)
+
+    effective_workers = max_extraction_workers if max_extraction_workers is not None else os.cpu_count() // 2
     logger.debug(
         "Starting text extraction for %d documents. extraction_workers=%d, download_threads=%d.",
         len(documents), effective_workers, DOWNLOAD_MAX_THREADS
@@ -326,7 +330,7 @@ def text_extraction(
     multiprocessing_context = multiprocessing.get_context("spawn")
     with (
         tempfile.TemporaryDirectory() as download_dir,
-        multiprocessing_context.Pool(processes=max_extraction_workers, initializer=worker_initializer) as process_pool,
+        multiprocessing_context.Pool(processes=effective_workers, initializer=worker_initializer) as process_pool,
     ):
         download_start_time = time.perf_counter()
         extraction_tasks, download_error_details = download_and_submit(
@@ -353,6 +357,7 @@ def text_extraction(
                         tb = traceback.format_exc()
                         logger.error("Worker crashed for %s:\n%s", file_path, tb)
                         success = False
+                    Path(file_path).unlink(missing_ok=True)
                     if success:
                         processed_count += 1
                     else:
