@@ -126,6 +126,7 @@ def text_extraction(
         and to prevent fork-safety issues with ONNX Runtime internals.
         """
         os.environ["TQDM_DISABLE"] = "1"
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
         from docling.datamodel.accelerator_options import AcceleratorOptions
         from docling.datamodel.base_models import InputFormat
@@ -224,13 +225,15 @@ def text_extraction(
     def download_and_submit(
         docs: list, download_path: Path, process_pool, out_dir: Path
     ) -> tuple[list[tuple[str, AsyncResult]], list[dict]]:
-        """Download documents from S3 and submit each for extraction as it arrives.
+        """Download all documents from S3, then submit for extraction largest-first.
 
         Documents with unsupported extensions are filtered out before any
         downloads begin. Supported documents are downloaded concurrently via a
-        thread pool. Each successfully downloaded file is immediately submitted
-        to the process pool for extraction, so download and extraction are
-        pipelined rather than sequenced.
+        thread pool. Once all downloads complete, the local files are sorted by
+        size descending before being submitted to the process pool. This ensures
+        the heaviest documents are picked up by workers first, avoiding the
+        straggler problem where one slow document blocks completion while other
+        workers sit idle.
 
         Args:
             docs: List of document descriptor dicts from the documents_descriptor JSON.
@@ -240,12 +243,12 @@ def text_extraction(
 
         Returns:
             - List of (local_file_path_str, AsyncResult) pairs, one per successfully
-              downloaded and submitted document.
+              downloaded and submitted document, ordered largest-first.
             - List of download error dicts, each containing 'file' (S3 key) and
               'traceback' (full exception traceback string).
         """
-        extraction_tasks = []
         download_error_details = []
+        downloaded_paths = []
         skipped_docs = [doc for doc in docs if Path(doc["key"]).suffix.lower() not in SUPPORTED_EXTENSIONS]
         supported = [doc for doc in docs if Path(doc["key"]).suffix.lower() in SUPPORTED_EXTENSIONS]
         if skipped_docs:
@@ -267,9 +270,13 @@ def text_extraction(
                     logger.warning("Download failed for key=%s: %s", key, exc)
                     download_error_details.append({"file": key, "traceback": exception_traceback})
                     continue
-                task = process_pool.apply_async(worker_process_document, (str(local_path), str(out_dir)))
-                extraction_tasks.append((str(local_path), task))
+                downloaded_paths.append(local_path)
 
+        downloaded_paths.sort(key=lambda p: p.stat().st_size, reverse=True)
+        extraction_tasks = [
+            (str(local_path), process_pool.apply_async(worker_process_document, (str(local_path), str(out_dir))))
+            for local_path in downloaded_paths
+        ]
         return extraction_tasks, download_error_details
 
     def raise_if_threshold_exceeded(
@@ -323,10 +330,16 @@ def text_extraction(
     documents = sorted(documents, key=lambda d: d.get("size_bytes", 0), reverse=True)
 
     effective_workers = max_extraction_workers if max_extraction_workers is not None else os.cpu_count() // 2
-    logger.debug(
+    logger.info(
         "Starting text extraction for %d documents. extraction_workers=%d, download_threads=%d.",
         len(documents), effective_workers, DOWNLOAD_MAX_THREADS
     )
+
+    logger.info("Pre-downloading docling models in main process...")
+    from docling.document_converter import DocumentConverter
+    DocumentConverter()
+    logger.info("Docling models ready.")
+
     multiprocessing_context = multiprocessing.get_context("spawn")
     with (
         tempfile.TemporaryDirectory() as download_dir,
