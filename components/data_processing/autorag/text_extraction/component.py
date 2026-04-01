@@ -52,6 +52,10 @@ def text_extraction(
     SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".md", ".html", ".txt"}
     DOWNLOAD_MAX_THREADS = 8
 
+    descriptor_path = Path(documents_descriptor.path) / DOCUMENTS_DESCRIPTOR_FILENAME
+    if not descriptor_path.exists():
+        raise FileNotFoundError(f"documents_descriptor.json not found at {descriptor_path}")
+
     s3_creds = {k: os.environ.get(k) for k in ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_S3_ENDPOINT"]}
     for k, v in s3_creds.items():
         if v is None:
@@ -317,7 +321,6 @@ def text_extraction(
             lines.append(f"\n  [{i}] {err['file']}\n    {snippet}")
         raise RuntimeError("\n".join(lines))
 
-    descriptor_path = Path(documents_descriptor.path) / DOCUMENTS_DESCRIPTOR_FILENAME
     with open(descriptor_path) as f:
         descriptor = json.load(f)
     bucket = descriptor["bucket"]
