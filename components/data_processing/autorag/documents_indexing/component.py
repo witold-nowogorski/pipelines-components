@@ -86,7 +86,6 @@ def documents_indexing(
     handler = logging.StreamHandler(sys.stdout)
     logger.addHandler(handler)
 
-    supported_vs_types = ("ls_milvus",)
     supported_distance_metrics = ("cosine", "euclidean")
     supported_chunking_methods = ("recursive",)
     supported_chunks_sizes_range = (128, 2048)
