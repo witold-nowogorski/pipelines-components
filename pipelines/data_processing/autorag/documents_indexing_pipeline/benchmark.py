@@ -457,12 +457,12 @@ def print_report(results: list[StepResult]) -> None:
 def main() -> None:
     """CLI entry point."""
 
-    os.environ["AWS_ACCESS_KEY_ID"] = "minio"
-    os.environ["AWS_SECRET_ACCESS_KEY"] = "minio123"
-    os.environ["AWS_DEFAULT_REGION"] = "us-south"
-    os.environ["AWS_S3_ENDPOINT"] = "https://minio-api-redhat-ods-operator.apps.rosa.ai-eng-gpu.socc.p3.openshiftapps.com"
-    os.environ["LLAMA_STACK_CLIENT_API_KEY"] = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJHVGUzTWtHT0U3NTJRT2hYRHZXRm84amhTbVFiaExSZGFqSjBJN2VKcjdVIn0.eyJleHAiOjE3Nzk4ODcyNDIsImlhdCI6MTc3MjExMTI0MiwianRpIjoib25ydHJvOmI2ZGU1ZGYwLWQ5NWItOTc5ZC1jYjNmLWMxMzA2ZTA2ZTZjMyIsImlzcyI6Imh0dHBzOi8va2V5Y2xvYWstaW5ncmVzcy1rZXljbG9hay5hcHBzLnJvc2EuYWktZW5nLWdwdS5zb2NjLnAzLm9wZW5zaGlmdGFwcHMuY29tL3JlYWxtcy9sbGFtYXN0YWNrLWRlbW8iLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiYzlkM2ZlM2MtZTc5ZC00MWJmLTgzNDMtMzNiY2U2MzhmMWU4IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoibGxhbWFzdGFjayIsInNpZCI6ImE4MjY1ZmI1LTllYWUtZDEwYi1jZjVlLTQ1Mzk3ODUzNTYyMCIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiLyoiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbImRlZmF1bHQtcm9sZXMtbGxhbWFzdGFjay1kZW1vIiwib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoicHJvZmlsZSBlbWFpbCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiVXNlciBUaGUgRmlyc3QiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ1c2VyMSIsImdpdmVuX25hbWUiOiJVc2VyIiwiZmFtaWx5X25hbWUiOiJUaGUgRmlyc3QiLCJlbWFpbCI6InVzZXIxQGtleWNsb2FrLm9yZyJ9.ASVc7X63o0LldMFf8POoowDqI-aGB1biUhoBk_RxFj3O4VptBy2HzsoGPVou8CpByZrbTkC0SPOR3FtkPB4mic3G2XAOlWbg7WlG9-4GBA6-qxzpOj4-QWHGrIDhU2vaaieeWQUg_ylywgjm9n3-ZaNE1RqJHpbB2Y4n84nqfXWWhTG9tQKwpM1g-14Wy2W-gAy6slzeeWdnzmfOC2yXzrvMXoqctVWJWRFxLpG8effyoHayjuqbYyGYYxqOFD5EFl7FuurYo3BIECFlB_IgUXg6liZUSkD76q-zoYUr5gZ0KuWcNeXw_zlpG8PVP3GabgNXLB_h7f-UI6GPs3wxzA"
-    os.environ["LLAMA_STACK_CLIENT_BASE_URL"] = "https://llama-stack-secure-redhat-ods-operator.apps.rosa.ai-eng-gpu.socc.p3.openshiftapps.com"
+    os.environ["AWS_ACCESS_KEY_ID"] = ""
+    os.environ["AWS_SECRET_ACCESS_KEY"] = ""
+    os.environ["AWS_DEFAULT_REGION"] = ""
+    os.environ["AWS_S3_ENDPOINT"] = ""
+    os.environ["LLAMA_STACK_CLIENT_API_KEY"] = ""
+    os.environ["LLAMA_STACK_CLIENT_BASE_URL"] = ""
 
     missing = _check_s3_env()
     if missing:
@@ -473,8 +473,8 @@ def main() -> None:
     prefix = "math-docs-dataset"
     sampling_enabled = True
     work_dir = ""
-    sampling_max_sizes_gib = [0.01, 0.3, 0.5, 0.7, 1.0, 1.0, 0.5, 0.2, 0.3, 0.5, 1.0]
-    json_output_dir = Path("benchmark_run_json_4")
+    sampling_max_sizes_gib = [0.01, 0.1, 0.2, 0.5, 0.7, 1.0, 1.0, 0.5, 0.2, 0.3, 0.5, 1.0]
+    json_output_dir = Path("benchmark_run_json_5")
     skip_indexing = False
     embedding_model_id = "vllm-embedding/bge-m3"
     llama_stack_vector_database_id = "ls_milvus"
