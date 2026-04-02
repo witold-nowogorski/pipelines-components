@@ -139,7 +139,9 @@ class TestTextExtractionUnitTests:
         extracted_text_artifact = mock.MagicMock()
         extracted_text_artifact.path = str(tmp_path / "output")
 
-        with mock.patch.dict(sys.modules, {**_mock_boto_modules(), **_docling_modules(), **_sync_multiprocess_modules()}):
+        with mock.patch.dict(
+            sys.modules, {**_mock_boto_modules(), **_docling_modules(), **_sync_multiprocess_modules()}
+        ):
             with pytest.raises(FileNotFoundError):
                 text_extraction.python_func(
                     documents_descriptor=documents_descriptor_artifact,
@@ -158,7 +160,9 @@ class TestTextExtractionUnitTests:
         documents_descriptor_artifact = mock.MagicMock(path=str(descriptor_dir))
         extracted_text_artifact = mock.MagicMock(path=str(tmp_path / "output"))
 
-        with mock.patch.dict(sys.modules, {**_mock_boto_modules(), **_docling_modules(), **_sync_multiprocess_modules()}):
+        with mock.patch.dict(
+            sys.modules, {**_mock_boto_modules(), **_docling_modules(), **_sync_multiprocess_modules()}
+        ):
             with pytest.raises(ValueError, match="AWS_SECRET_ACCESS_KEY environment variable not set"):
                 text_extraction.python_func(
                     documents_descriptor=documents_descriptor_artifact,

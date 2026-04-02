@@ -70,9 +70,7 @@ def documents_discovery(
     }
     for k, v in s3_creds.items():
         if v is None:
-            raise ValueError(
-                "%s environment variable not set. Check if kubernetes secret was configured properly" % k
-            )
+            raise ValueError("%s environment variable not set. Check if kubernetes secret was configured properly" % k)
 
     def _make_s3_client(verify=True):
         return boto3.client(

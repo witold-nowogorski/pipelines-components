@@ -172,7 +172,9 @@ def text_extraction(
                 InputFormat.MD: MarkdownFormatOption(),
             }
         )
-        worker_log.debug("Worker pid=%s: DocumentConverter ready (%.1fs)", worker_pid, time.perf_counter() - init_start_time)
+        worker_log.debug(
+            "Worker pid=%s: DocumentConverter ready (%.1fs)", worker_pid, time.perf_counter() - init_start_time
+        )
 
     def worker_process_document(file_path_str: str, output_dir_str: str) -> tuple[bool, str | None]:
         """Convert a single document to Markdown and write it to the output directory.
@@ -201,7 +203,7 @@ def text_extraction(
                 output_file.write_text(input_file.read_text(encoding="utf-8"), encoding="utf-8")
                 return True, None
 
-            converter = getattr(sys.modules[__name__], '_mp_worker_converter', None)
+            converter = getattr(sys.modules[__name__], "_mp_worker_converter", None)
             if converter is None:
                 error_message = (
                     f"Worker pid={os.getpid()} has no DocumentConverter. "
@@ -210,7 +212,9 @@ def text_extraction(
                 return False, error_message
 
             file_size_mib = input_file.stat().st_size / (1024 * 1024) if input_file.exists() else 0.0
-            worker_log.info("pid=%s docling convert start: %s (%.1f MiB on disk)", os.getpid(), input_file.name, file_size_mib)
+            worker_log.info(
+                "pid=%s docling convert start: %s (%.1f MiB on disk)", os.getpid(), input_file.name, file_size_mib
+            )
             conversion_result = converter.convert(input_file)
             output_file.write_text(conversion_result.document.export_to_markdown(), encoding="utf-8")
             worker_log.info(
@@ -257,10 +261,7 @@ def text_extraction(
         supported = [doc for doc in docs if Path(doc["key"]).suffix.lower() in SUPPORTED_EXTENSIONS]
         if skipped_docs:
             skipped_keys = ", ".join(doc["key"] for doc in skipped_docs)
-            logger.warning(
-                "Skipping %d document(s) with unsupported extensions: %s",
-                len(skipped_docs), skipped_keys
-            )
+            logger.warning("Skipping %d document(s) with unsupported extensions: %s", len(skipped_docs), skipped_keys)
 
         with ThreadPoolExecutor(max_workers=DOWNLOAD_MAX_THREADS) as dl_pool:
             dl_futures = {dl_pool.submit(download_document, doc, download_path): doc for doc in supported}
@@ -283,9 +284,7 @@ def text_extraction(
         ]
         return extraction_tasks, download_error_details
 
-    def raise_if_threshold_exceeded(
-        error_details: list, total_docs: int, tolerance: Optional[float]
-    ) -> None:
+    def raise_if_threshold_exceeded(error_details: list, total_docs: int, tolerance: Optional[float]) -> None:
         """
         Called twice during the pipeline run: once after downloads complete (to
         abort before extraction starts if too many files failed to download) and
@@ -311,8 +310,7 @@ def text_extraction(
         tolerance_str = "0 (none allowed)" if tolerance is None else f"{tolerance:.0%} of {total_docs}"
         shown = error_details[:10]
         lines = [
-            f"Text extraction failed: {n_errors}/{total_docs} document(s) failed "
-            f"(tolerance: {tolerance_str}).",
+            f"Text extraction failed: {n_errors}/{total_docs} document(s) failed (tolerance: {tolerance_str}).",
             f"Showing {len(shown)} of {n_errors} error(s):",
         ]
         for i, err in enumerate(shown, 1):
@@ -335,11 +333,14 @@ def text_extraction(
     effective_workers = max_extraction_workers if max_extraction_workers is not None else os.cpu_count() // 2
     logger.info(
         "Starting text extraction for %d documents. extraction_workers=%d, download_threads=%d.",
-        len(documents), effective_workers, DOWNLOAD_MAX_THREADS
+        len(documents),
+        effective_workers,
+        DOWNLOAD_MAX_THREADS,
     )
 
     logger.info("Pre-downloading docling models in main process...")
     from docling.document_converter import DocumentConverter
+
     DocumentConverter()
     logger.info("Docling models ready.")
 
@@ -354,7 +355,9 @@ def text_extraction(
         )
         logger.info(
             "Downloads finished in %.1fs; %d file(s) queued for extraction, %d download error(s).",
-            time.perf_counter() - download_start_time, len(extraction_tasks), len(download_error_details),
+            time.perf_counter() - download_start_time,
+            len(extraction_tasks),
+            len(download_error_details),
         )
         raise_if_threshold_exceeded(download_error_details, len(documents), error_tolerance)
 
@@ -390,7 +393,9 @@ def text_extraction(
     total_docs = len(documents)
     logger.info(
         "Text extraction completed. Total processed: %d/%d, Errors: %d",
-        processed_count, total_docs, total_errors,
+        processed_count,
+        total_docs,
+        total_errors,
     )
     raise_if_threshold_exceeded(all_error_details, total_docs, error_tolerance)
 
