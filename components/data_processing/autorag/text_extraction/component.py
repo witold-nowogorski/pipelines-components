@@ -41,11 +41,11 @@ def text_extraction(
     import time
     import traceback
     from concurrent.futures import ThreadPoolExecutor, as_completed
+    from multiprocessing.pool import AsyncResult
     from pathlib import Path
 
     import boto3
     import multiprocess as multiprocessing
-    from multiprocessing.pool import AsyncResult
     from botocore.exceptions import SSLError
 
     DOCUMENTS_DESCRIPTOR_FILENAME = "documents_descriptor.json"
@@ -285,10 +285,12 @@ def text_extraction(
         return extraction_tasks, download_error_details
 
     def raise_if_threshold_exceeded(error_details: list, total_docs: int, tolerance: Optional[float]) -> None:
-        """
-        Called twice during the pipeline run: once after downloads complete (to
-        abort before extraction starts if too many files failed to download) and
-        once after all extraction tasks finish (to report the combined total).
+        """Check whether the error count exceeds the allowed tolerance.
+
+        Called twice during the pipeline run: once after downloads complete
+        (to abort before extraction starts if too many files failed to
+        download) and once after all extraction tasks finish (to report
+        the combined total).
 
         Args:
             error_details: List of error dicts accumulated so far, each with
