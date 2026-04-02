@@ -98,6 +98,7 @@ def _pipeline_arguments_from_config(config):
         "input_data_bucket_name": config["input_data_bucket_name"],
         "input_data_key": config["input_data_key"],
         "llama_stack_secret_name": config["llama_stack_secret_name"],
+        "llama_stack_vector_io_provider_id": config["llama_stack_vector_io_provider_id"],
     }
 
 
