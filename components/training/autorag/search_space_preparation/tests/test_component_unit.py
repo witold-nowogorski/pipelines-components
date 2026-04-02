@@ -163,7 +163,7 @@ class TestSearchSpacePreparationUnitTests:
         assert "search_space_prep_report" in params
 
     def test_non_list_embeddings_models_raises_type_error(self):
-        """embeddings_models must be a list when both model lists are provided."""
+        """embeddings_models must be a list when provided."""
         with mock.patch.dict(sys.modules, _minimal_dependency_modules()):
             with pytest.raises(TypeError, match="embeddings_models must be a list"):
                 search_space_preparation.python_func(
@@ -171,7 +171,17 @@ class TestSearchSpacePreparationUnitTests:
                     extracted_text=mock.MagicMock(path="/tmp/extracted"),
                     search_space_prep_report=mock.MagicMock(path="/tmp/report.yaml"),
                     embeddings_models="not-a-list",
-                    generation_models=["model-a"],
+                )
+
+    def test_non_list_generation_models_raises_type_error(self):
+        """generation_models must be a list."""
+        with mock.patch.dict(sys.modules, _minimal_dependency_modules()):
+            with pytest.raises(TypeError, match="generation_models must be a list"):
+                search_space_preparation.python_func(
+                    test_data=mock.MagicMock(path="/tmp/test_data.json"),
+                    extracted_text=mock.MagicMock(path="/tmp/extracted"),
+                    search_space_prep_report=mock.MagicMock(path="/tmp/report.yaml"),
+                    generation_models="not-a-list",
                 )
 
     def test_unsupported_metric_raises_value_error(self):
@@ -185,6 +195,78 @@ class TestSearchSpacePreparationUnitTests:
                     embeddings_models=["embed-a"],
                     generation_models=["gen-a"],
                     metric="unsupported_metric",
+                )
+
+    @mock.patch.dict(
+        "os.environ",
+        {
+            "LLAMA_STACK_CLIENT_BASE_URL": "https://llama-stack.example.com",
+            "LLAMA_STACK_CLIENT_API_KEY": "test-api-key",
+        },
+    )
+    def test_no_models_with_llama_stack_does_not_raise(self, tmp_path):
+        """When no model lists are provided, LlamaStack auto-discovers models — no early validation error."""
+        mocks = _make_all_mocks()
+
+        llama_mod = _make_llama_stack_client_module()
+        mock_ls = mock.MagicMock()
+        mock_ls.models.list.return_value = []
+        llama_mod.LlamaStackClient.return_value = mock_ls
+        mocks["llama_stack_client"] = llama_mod
+        mocks["openai"] = _make_openai_module()
+
+        # Abort after search space preparation to avoid full pipeline execution
+        mocks[
+            "ai4rag.search_space.prepare.prepare_search_space"
+        ].prepare_search_space_with_llama_stack.side_effect = _SentinelAbort
+
+        with mock.patch.dict(sys.modules, mocks):
+            with pytest.raises(_SentinelAbort):
+                search_space_preparation.python_func(
+                    test_data=mock.MagicMock(path=str(tmp_path / "test_data.json")),
+                    extracted_text=mock.MagicMock(path=str(tmp_path / "extracted")),
+                    search_space_prep_report=mock.MagicMock(path=str(tmp_path / "report.yml")),
+                )
+
+    @mock.patch.dict(
+        "os.environ",
+        {
+            "LLAMA_STACK_CLIENT_BASE_URL": "https://llama-stack.example.com",
+            "LLAMA_STACK_CLIENT_API_KEY": "test-api-key",
+        },
+    )
+    def test_partial_model_lists_with_llama_stack(self, tmp_path):
+        """Only generation_models provided — LlamaStack discovers embedding models automatically."""
+        mocks = _make_all_mocks()
+
+        llama_mod = _make_llama_stack_client_module()
+        mock_ls = mock.MagicMock()
+        mock_ls.models.list.return_value = []
+        llama_mod.LlamaStackClient.return_value = mock_ls
+        mocks["llama_stack_client"] = llama_mod
+        mocks["openai"] = _make_openai_module()
+
+        mocks[
+            "ai4rag.search_space.prepare.prepare_search_space"
+        ].prepare_search_space_with_llama_stack.side_effect = _SentinelAbort
+
+        with mock.patch.dict(sys.modules, mocks):
+            with pytest.raises(_SentinelAbort):
+                search_space_preparation.python_func(
+                    test_data=mock.MagicMock(path=str(tmp_path / "test_data.json")),
+                    extracted_text=mock.MagicMock(path=str(tmp_path / "extracted")),
+                    search_space_prep_report=mock.MagicMock(path=str(tmp_path / "report.yml")),
+                    generation_models=["gen-model-a"],
+                )
+
+    def test_no_models_no_llama_stack_no_endpoints_raises(self):
+        """Without LlamaStack env vars or model endpoints, ValueError is raised."""
+        with mock.patch.dict(sys.modules, _minimal_dependency_modules()):
+            with pytest.raises(ValueError, match="have to be defined"):
+                search_space_preparation.python_func(
+                    test_data=mock.MagicMock(path="/tmp/test_data.json"),
+                    extracted_text=mock.MagicMock(path="/tmp/extracted"),
+                    search_space_prep_report=mock.MagicMock(path="/tmp/report.yaml"),
                 )
 
 

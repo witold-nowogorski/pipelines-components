@@ -10,7 +10,7 @@ from kfp.compiler import Compiler
         "f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc"
     ),
     packages_to_install=[
-        "ai4rag@git+https://github.com/IBM/ai4rag.git",
+        "ai4rag==0.5.2",
         "pysqlite3-binary",  # ChromaDB requires sqlite3 >= 3.35; base image has older sqlite
         "openai",
         "llama-stack-client",
@@ -158,29 +158,19 @@ def search_space_preparation(
 
     supported_metrics = ["faithfulness", "answer_correctness", "context_correctness"]
 
-    if embeddings_models and generation_models:
+    if embeddings_models:
         if not isinstance(embeddings_models, list):
             raise TypeError("embeddings_models must be a list.")
-        else:
-            for i, m in enumerate(embeddings_models):
-                if not m:
-                    raise TypeError(f"embeddings_models[{i}] must be a non-empty string.")
+        for i, m in enumerate(embeddings_models):
+            if not m:
+                raise TypeError(f"embeddings_models[{i}] must be a non-empty string.")
 
+    if generation_models:
         if not isinstance(generation_models, list):
-            raise TypeError("generation_models must be a list when provided.")
-        else:
-            for i, m in enumerate(generation_models):
-                if not m:
-                    raise TypeError(f"generation_models[{i}] must be a non-empty string.")
-    else:
-        for name, value in (
-            ("chat_model_token", chat_model_token),
-            ("chat_model_url", chat_model_url),
-            ("embedding_model_url", embedding_model_url),
-            ("embedding_model_token", embedding_model_token),
-        ):
-            if not value:
-                raise TypeError(f"{name} must be a non-empty string.")
+            raise TypeError("generation_models must be a list.")
+        for i, m in enumerate(generation_models):
+            if not m:
+                raise TypeError(f"generation_models[{i}] must be a non-empty string.")
 
     if metric and metric not in supported_metrics:
         raise ValueError(f"Metric {metric} is not supported. Supported metrics are {supported_metrics}.")
