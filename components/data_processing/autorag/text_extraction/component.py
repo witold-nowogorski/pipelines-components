@@ -119,19 +119,12 @@ def text_extraction(
         logger.info("Download finished %s (%.1fs)", key, time.perf_counter() - _dl_t0)
         return local_path
 
-    def worker_initializer() -> None:
-        """Initialize a worker process by loading docling's DocumentConverter.
+    def create_document_converter():
+        """Create a docling DocumentConverter with the project's standard options.
 
-        Called once per worker process when the multiprocessing Pool starts.
-        Stores the converter as a module-level attribute (_mp_worker_converter)
-        so that worker_process_document can retrieve it without re-importing
-        docling on every call. Docling imports are intentionally deferred to
-        this function to avoid loading heavy native libraries in the main process
-        and to prevent fork-safety issues with ONNX Runtime internals.
+        Imports are deferred to call time so that heavy native libraries (ONNX
+        Runtime, etc.) are only loaded when actually needed.
         """
-        os.environ["TQDM_DISABLE"] = "1"
-        os.environ.setdefault("HF_HUB_OFFLINE", "1")
-
         from docling.datamodel.accelerator_options import AcceleratorOptions
         from docling.datamodel.base_models import InputFormat
         from docling.datamodel.pipeline_options import PaginatedPipelineOptions, PdfPipelineOptions
@@ -144,6 +137,38 @@ def text_extraction(
             WordFormatOption,
         )
 
+        pdf_pipeline_options = PdfPipelineOptions()
+        pdf_pipeline_options.do_ocr = False
+        pdf_pipeline_options.do_table_structure = False
+        pdf_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=2)
+
+        paginated_pipeline_options = PaginatedPipelineOptions()
+        paginated_pipeline_options.generate_page_images = False
+        paginated_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=2)
+
+        return DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_pipeline_options),
+                InputFormat.DOCX: WordFormatOption(pipeline_options=paginated_pipeline_options),
+                InputFormat.PPTX: PowerpointFormatOption(pipeline_options=paginated_pipeline_options),
+                InputFormat.HTML: HTMLFormatOption(),
+                InputFormat.MD: MarkdownFormatOption(),
+            }
+        )
+
+    def worker_initializer() -> None:
+        """Initialize a worker process by loading docling's DocumentConverter.
+
+        Called once per worker process when the multiprocessing Pool starts.
+        Stores the converter as a module-level attribute (_mp_worker_converter)
+        so that worker_process_document can retrieve it without re-importing
+        docling on every call. The first worker to convert a PDF will trigger
+        model downloads from HuggingFace Hub; subsequent workers (and calls)
+        use the cached files. huggingface_hub uses file locks to handle
+        concurrent access safely.
+        """
+        os.environ["TQDM_DISABLE"] = "1"
+
         worker_log = logging.getLogger("text_extraction_worker")
         worker_log.setLevel(logging.INFO)
         worker_log.propagate = False
@@ -154,24 +179,7 @@ def text_extraction(
         init_start_time = time.perf_counter()
         worker_log.debug("Worker pid=%s: loading DocumentConverter.", worker_pid)
 
-        pdf_pipeline_options = PdfPipelineOptions()
-        pdf_pipeline_options.do_ocr = False
-        pdf_pipeline_options.do_table_structure = False
-        pdf_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=2)
-
-        paginated_pipeline_options = PaginatedPipelineOptions()
-        paginated_pipeline_options.generate_page_images = False
-        paginated_pipeline_options.accelerator_options = AcceleratorOptions(device="cpu", num_threads=2)
-
-        sys.modules[__name__]._mp_worker_converter = DocumentConverter(
-            format_options={
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_pipeline_options),
-                InputFormat.DOCX: WordFormatOption(pipeline_options=paginated_pipeline_options),
-                InputFormat.PPTX: PowerpointFormatOption(pipeline_options=paginated_pipeline_options),
-                InputFormat.HTML: HTMLFormatOption(),
-                InputFormat.MD: MarkdownFormatOption(),
-            }
-        )
+        sys.modules[__name__]._mp_worker_converter = create_document_converter()
         worker_log.debug(
             "Worker pid=%s: DocumentConverter ready (%.1fs)", worker_pid, time.perf_counter() - init_start_time
         )
@@ -339,12 +347,6 @@ def text_extraction(
         effective_workers,
         DOWNLOAD_MAX_THREADS,
     )
-
-    logger.info("Pre-downloading docling models in main process...")
-    from docling.document_converter import DocumentConverter
-
-    DocumentConverter()
-    logger.info("Docling models ready.")
 
     multiprocessing_context = multiprocessing.get_context("spawn")
     with (
