@@ -378,6 +378,7 @@ class TestTextExtractionMultiFormatUnitTests:
                 "docling.datamodel.base_models": mock.MagicMock(InputFormat=mock.MagicMock(PDF="PDF")),
                 "docling.datamodel.pipeline_options": mock.MagicMock(
                     PdfPipelineOptions=mock_pdf_pipeline_options,
+                    ThreadedPdfPipelineOptions=mock_pdf_pipeline_options,
                     PaginatedPipelineOptions=mock.MagicMock(),
                 ),
                 "docling.document_converter": mock.MagicMock(
