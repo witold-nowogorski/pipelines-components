@@ -158,7 +158,7 @@ class TestTimeseriesModelsSelectionUnitTests:
 
         with pytest.raises(
             ValueError,
-            match=r"top_n must be less than or equal to number_of_models_trained \(2\); got 10\.",
+            match=r"top_n must be less than or equal to number_of_models_trained \(2\); got 3\.",
         ):
             autogluon_timeseries_models_selection.python_func(
                 target="sales",
@@ -166,7 +166,7 @@ class TestTimeseriesModelsSelectionUnitTests:
                 timestamp_column="timestamp",
                 train_data_path="/tmp/train.csv",
                 test_data=test_data,
-                top_n=10,
+                top_n=3,
                 workspace_path="/tmp/workspace",
             )
 
@@ -174,7 +174,7 @@ class TestTimeseriesModelsSelectionUnitTests:
         """top_n must be in range (0, TOP_N_MAX] (see component TOP_N_MAX)."""
         test_data = mock.MagicMock()
         test_data.path = "/tmp/test.csv"
-        with pytest.raises(ValueError, match=r"top_n must be an integer in the range \(0, 10\]; got 0\."):
+        with pytest.raises(ValueError, match=r"top_n must be an integer in the range \(0, 7\]; got 0\."):
             autogluon_timeseries_models_selection.python_func(
                 target="sales",
                 id_column="item_id",
@@ -189,14 +189,14 @@ class TestTimeseriesModelsSelectionUnitTests:
         """top_n above TOP_N_MAX is rejected before training."""
         test_data = mock.MagicMock()
         test_data.path = "/tmp/test.csv"
-        with pytest.raises(ValueError, match=r"top_n must be an integer in the range \(0, 10\]; got 11\."):
+        with pytest.raises(ValueError, match=r"top_n must be an integer in the range \(0, 7\]; got 8\."):
             autogluon_timeseries_models_selection.python_func(
                 target="sales",
                 id_column="item_id",
                 timestamp_column="timestamp",
                 train_data_path="/tmp/train.csv",
                 test_data=test_data,
-                top_n=11,
+                top_n=8,
                 workspace_path="/tmp/workspace",
             )
 

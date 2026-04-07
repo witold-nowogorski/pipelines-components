@@ -7,9 +7,6 @@ from kfp_components.utils.consts import AUTORAG_IMAGE  # pyright: ignore[reportM
 
 @dsl.component(
     base_image=AUTORAG_IMAGE,  # noqa: E501
-    packages_to_install=[
-        "pysqlite3-binary",  # ChromaDB requires sqlite3 >= 3.35; base image has older sqlite
-    ],
 )
 def search_space_preparation(
     test_data: dsl.Input[dsl.Artifact],

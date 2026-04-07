@@ -6,7 +6,6 @@ from kfp_components.utils.consts import AUTOML_IMAGE  # pyright: ignore[reportMi
 
 @dsl.component(
     base_image=AUTOML_IMAGE,  # noqa: E501
-    packages_to_install=["autogluon.timeseries==1.5.0"],
 )
 def autogluon_timeseries_models_selection(
     target: str,
@@ -62,7 +61,7 @@ def autogluon_timeseries_models_selection(
     DEFAULT_EVAL_METRIC = "MASE"
     DEFAULT_TIME_LIMIT = 600  # 10 minutes
 
-    TOP_N_MAX = 10
+    TOP_N_MAX = 7
 
     # Input validation
     for param, value in (

@@ -8,7 +8,6 @@ _NOTEBOOKS_DIR = str(pathlib.Path(__file__).parent / "notebook_templates")
 
 @dsl.component(
     base_image=AUTOML_IMAGE,  # noqa: E501
-    packages_to_install=["autogluon.timeseries==1.5.0"],
     embedded_artifact_path=_NOTEBOOKS_DIR,
 )
 def autogluon_timeseries_models_full_refit(

@@ -7,9 +7,6 @@ from kfp_components.utils.consts import AUTORAG_IMAGE  # pyright: ignore[reportM
 
 @dsl.component(
     base_image=AUTORAG_IMAGE,  # noqa: E501
-    packages_to_install=[
-        "pysqlite3-binary",  # ChromaDB requires sqlite3 >= 3.35; base image has older sqlite
-    ],
     embedded_artifact_path=str((Path(__file__).parent / "notebook_templates")),
 )
 def rag_templates_optimization(
