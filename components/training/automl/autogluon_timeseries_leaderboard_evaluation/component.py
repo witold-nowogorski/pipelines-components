@@ -2,12 +2,13 @@ from pathlib import Path
 from typing import List, NamedTuple
 
 from kfp import dsl
+from kfp_components.utils.consts import AUTOML_IMAGE  # pyright: ignore[reportMissingImports]
 
 _SHARED_DIR = Path(__file__).parent.parent / "shared"
 
 
 @dsl.component(
-    base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",  # noqa: E501
+    base_image=AUTOML_IMAGE,  # noqa: E501
     embedded_artifact_path=str(_SHARED_DIR),
 )
 def timeseries_leaderboard_evaluation(

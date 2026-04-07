@@ -2,16 +2,13 @@ from pathlib import Path
 from typing import Optional
 
 from kfp import dsl
+from kfp_components.utils.consts import AUTORAG_IMAGE  # pyright: ignore[reportMissingImports]
 
 
 @dsl.component(
-    base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",
+    base_image=AUTORAG_IMAGE,  # noqa: E501
     packages_to_install=[
-        "ai4rag~=0.5.2",
-        "pyyaml",
         "pysqlite3-binary",  # ChromaDB requires sqlite3 >= 3.35; base image has older sqlite
-        "llama-stack-client",
-        "openai",
     ],
     embedded_artifact_path=str((Path(__file__).parent / "notebook_templates")),
 )

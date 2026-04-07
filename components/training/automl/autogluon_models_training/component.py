@@ -2,21 +2,14 @@ import pathlib
 from typing import NamedTuple, Optional
 
 from kfp import dsl
+from kfp_components.utils.consts import AUTOML_IMAGE  # pyright: ignore[reportMissingImports]
 
 # Reuse notebook templates from autogluon_models_full_refit
 _NOTEBOOKS_DIR = str(pathlib.Path(__file__).parent / "notebook_templates")
 
 
 @dsl.component(
-    base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",  # noqa: E501
-    packages_to_install=[
-        "autogluon.tabular==1.5.0",
-        "catboost==1.2.8",
-        "fastai==2.8.5",
-        "lightgbm==4.6.0",
-        "torch==2.9.1",
-        "xgboost==3.1.3",
-    ],
+    base_image=AUTOML_IMAGE,  # noqa: E501
     embedded_artifact_path=_NOTEBOOKS_DIR,
 )
 def autogluon_models_training(

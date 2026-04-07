@@ -1,6 +1,6 @@
 # Autogluon Timeseries Training Pipeline ✨
 
-> ⚠️ **Stability: alpha** — This asset is not yet stable and may change.
+> ⚠️ **Stability: beta** — This asset is not yet stable and may change.
 
 ## Overview 🧾
 
@@ -56,7 +56,8 @@ prediction_length=14, top_n=3, )
 ## Metadata 🗂️
 
 - **Name**: autogluon_timeseries_training_pipeline
-- **Stability**: alpha
+- **Stability**: beta
+- **Managed**: Yes
 - **Dependencies**:
   - Kubeflow:
     - Name: Pipelines, Version: >=2.15.2

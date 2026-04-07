@@ -1,12 +1,13 @@
 import pathlib
 
 from kfp import dsl
+from kfp_components.utils.consts import AUTOML_IMAGE  # pyright: ignore[reportMissingImports]
 
 _NOTEBOOKS_DIR = str(pathlib.Path(__file__).parent / "notebook_templates")
 
 
 @dsl.component(
-    base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",  # noqa: E501
+    base_image=AUTOML_IMAGE,  # noqa: E501
     packages_to_install=["autogluon.timeseries==1.5.0"],
     embedded_artifact_path=_NOTEBOOKS_DIR,
 )

@@ -1,6 +1,6 @@
 # Documents Rag Optimization Pipeline ✨
 
-> ⚠️ **Stability: alpha** — This asset is not yet stable and may change.
+> ⚠️ **Stability: beta** — This asset is not yet stable and may change.
 
 ## Overview 🧾
 
@@ -32,7 +32,8 @@ The system integrates with llama-stack API for inference and vector database ope
 ## Metadata 🗂️
 
 - **Name**: documents_rag_optimization_pipeline
-- **Stability**: alpha
+- **Stability**: beta
+- **Managed**: Yes
 - **Dependencies**:
   - Kubeflow:
     - Name: Pipelines, Version: >=2.15.2

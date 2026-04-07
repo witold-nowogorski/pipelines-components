@@ -2,18 +2,13 @@ from typing import List, Optional
 
 from kfp import dsl
 from kfp.compiler import Compiler
+from kfp_components.utils.consts import AUTORAG_IMAGE  # pyright: ignore[reportMissingImports]
 
 
 @dsl.component(
-    base_image=(
-        "registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:"
-        "f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc"
-    ),
+    base_image=AUTORAG_IMAGE,  # noqa: E501
     packages_to_install=[
-        "ai4rag==0.5.2",
         "pysqlite3-binary",  # ChromaDB requires sqlite3 >= 3.35; base image has older sqlite
-        "openai",
-        "llama-stack-client",
     ],
 )
 def search_space_preparation(

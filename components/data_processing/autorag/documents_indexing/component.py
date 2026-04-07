@@ -1,11 +1,11 @@
 from typing import Optional
 
 from kfp import dsl
+from kfp_components.utils.consts import AUTORAG_IMAGE  # pyright: ignore[reportMissingImports]
 
 
 @dsl.component(
-    base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",
-    packages_to_install=["langchain-text-splitters", "ai4rag@git+https://github.com/IBM/ai4rag.git"],
+    base_image=AUTORAG_IMAGE,  # noqa: E501
 )
 def documents_indexing(
     embedding_model_id: str,

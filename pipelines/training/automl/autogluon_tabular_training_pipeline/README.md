@@ -1,6 +1,6 @@
 # Autogluon Tabular Training Pipeline ✨
 
-> ⚠️ **Stability: alpha** — This asset is not yet stable and may change.
+> ⚠️ **Stability: beta** — This asset is not yet stable and may change.
 
 ## Overview 🧾
 
@@ -58,7 +58,8 @@ The pipeline leverages AutoGluon's unique ensembling strategy that combines mult
 ## Metadata 🗂️
 
 - **Name**: autogluon_tabular_training_pipeline
-- **Stability**: alpha
+- **Stability**: beta
+- **Managed**: Yes
 - **Dependencies**:
   - Kubeflow:
     - Name: Pipelines, Version: >=2.15.2

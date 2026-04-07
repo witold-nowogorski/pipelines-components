@@ -1,10 +1,11 @@
 from typing import NamedTuple
 
 from kfp import dsl
+from kfp_components.utils.consts import AUTOML_IMAGE  # pyright: ignore[reportMissingImports]
 
 
 @dsl.component(
-    base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",  # noqa: E501
+    base_image=AUTOML_IMAGE,  # noqa: E501
 )
 def timeseries_data_loader(
     file_key: str,

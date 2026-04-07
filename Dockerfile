@@ -9,6 +9,7 @@ COPY pyproject.toml __init__.py ./
 COPY components/ components/
 COPY pipelines/ pipelines/
 COPY scripts/ scripts/
+COPY utils/ utils/
 
 RUN chown -R 1001:1001 /app
 USER 1001

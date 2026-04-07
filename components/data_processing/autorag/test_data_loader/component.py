@@ -1,11 +1,11 @@
 from json import JSONDecodeError
 
 from kfp import dsl
+from kfp_components.utils.consts import AUTORAG_IMAGE  # pyright: ignore[reportMissingImports]
 
 
 @dsl.component(
-    base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",
-    packages_to_install=["boto3"],
+    base_image=AUTORAG_IMAGE,  # noqa: E501
 )
 def test_data_loader(test_data_bucket_name: str, test_data_path: str, test_data: dsl.Output[dsl.Artifact] = None):
     """Download test data json file from S3 into a KFP artifact.

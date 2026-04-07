@@ -1,10 +1,11 @@
 """Create Llama Stack /v1/responses JSON bodies from RAG pattern artifacts."""
 
 from kfp import dsl
+from kfp_components.utils.consts import AUTORAG_IMAGE  # pyright: ignore[reportMissingImports]
 
 
 @dsl.component(
-    base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",
+    base_image=AUTORAG_IMAGE,  # noqa: E501
 )
 def prepare_responses_api_requests(
     rag_patterns: dsl.InputPath(dsl.Artifact),
