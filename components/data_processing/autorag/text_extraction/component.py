@@ -179,6 +179,9 @@ def text_extraction(
         import time
 
         os.environ["TQDM_DISABLE"] = "1"
+        os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+        os.environ.setdefault("MKL_NUM_THREADS", "1")
+        os.environ.setdefault("OMP_NUM_THREADS", "1")
 
         if _docling_artifacts_path() is not None:
             os.environ.setdefault("HF_HUB_OFFLINE", "1")
