@@ -359,7 +359,10 @@ def text_extraction(
 
     documents = sorted(documents, key=lambda d: d.get("size_bytes", 0), reverse=True)
 
-    effective_workers = max_extraction_workers if max_extraction_workers is not None else os.cpu_count() // 2
+    if max_extraction_workers is not None:
+        effective_workers = max(1, max_extraction_workers)
+    else:
+        effective_workers = min(max(1, (os.cpu_count() or 1) // 2), 8)
     logger.info(
         "Starting text extraction for %d documents. extraction_workers=%d, download_threads=%d.",
         len(documents),
