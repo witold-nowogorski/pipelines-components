@@ -120,9 +120,26 @@ def text_extraction(
         return local_path
 
     def _docling_artifacts_path() -> Optional[Path]:
-        """Local Docling models root (contains docling-project--* dirs). Set via image ENV for offline use."""
+        """Local Docling models root (contains docling-project--* dirs). Set via image ENV for offline use.
+
+        Returns the path only when it exists and contains at least one model
+        directory. If the path is missing or empty, returns None so that
+        docling falls back to downloading models from HuggingFace.
+        """
         raw = os.environ.get("DOCLING_ARTIFACTS_PATH")
-        return Path(raw) if raw else None
+        if not raw:
+            logger.info("DOCLING_ARTIFACTS_PATH not set — models will be downloaded from HuggingFace.")
+            return None
+        p = Path(raw)
+        if not p.is_dir() or not any(p.iterdir()):
+            logger.warning(
+                "DOCLING_ARTIFACTS_PATH=%s is set but the directory is missing or empty "
+                "— falling back to HuggingFace model download.",
+                raw,
+            )
+            return None
+        logger.info("Using local Docling artifacts from %s", p)
+        return p
 
     def _build_docling_format_options():
         """Shared pipeline options for main-process warmup and worker processes (spawn-safe: module-level)."""
@@ -162,7 +179,9 @@ def text_extraction(
         import time
 
         os.environ["TQDM_DISABLE"] = "1"
-        os.environ.setdefault("HF_HUB_OFFLINE", "1")
+
+        if _docling_artifacts_path() is not None:
+            os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
         from docling.document_converter import DocumentConverter
 
