@@ -1,10 +1,7 @@
 import pathlib
 
 from kfp import dsl
-from kfp_components.utils.consts import (  # pyright: ignore[reportMissingImports]
-    AUTOML_IMAGE,
-    REDHAT_INDEX_URL,
-)
+from kfp_components.utils.consts import AUTOML_IMAGE  # pyright: ignore[reportMissingImports]
 
 _NOTEBOOKS_DIR = str(pathlib.Path(__file__).parent / "notebook_templates")
 
@@ -243,7 +240,6 @@ def autogluon_timeseries_models_full_refit(
             "<REPLACE_ID_COLUMN>": model_config.get("id_column"),
             "<REPLACE_TIMESTAMP_COLUMN>": model_config.get("timestamp_column"),
             "<REPLACE_KNOWN_COVARIATES_NAMES>": str(model_config.get("known_covariates_names") or []),
-            "<REPLACE_PIP_EXTRA_INDEX_URL>": REDHAT_INDEX_URL,
         }
         notebook = replace_placeholder_in_notebook(notebook, replacements)
 

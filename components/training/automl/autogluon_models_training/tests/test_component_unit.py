@@ -45,7 +45,6 @@ _MINIMAL_NOTEBOOK = {
                 'run_id = "<REPLACE_RUN_ID>"\n',
                 'model_name = "<REPLACE_MODEL_NAME>"\n',
                 "score_data = <REPLACE_SAMPLE_ROW>\n",
-                'pip_extra_index = "<REPLACE_PIP_EXTRA_INDEX_URL>"\n',
             ],
         }
     ],
@@ -235,7 +234,6 @@ class TestAutogluonModelsTrainingUnitTests:
                 "<REPLACE_RUN_ID>",
                 "<REPLACE_MODEL_NAME>",
                 "<REPLACE_SAMPLE_ROW>",
-                "<REPLACE_PIP_EXTRA_INDEX_URL>",
             ):  # noqa: E501
                 assert placeholder not in nb_text
             # pipeline name trimmed (last segment "-123" removed), raw name absent

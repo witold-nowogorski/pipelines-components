@@ -27,7 +27,6 @@ def _write_notebook_template(tmp_path):
                     'id_col = "<REPLACE_ID_COLUMN>"\n',
                     'ts_col = "<REPLACE_TIMESTAMP_COLUMN>"\n',
                     "covariates = <REPLACE_KNOWN_COVARIATES_NAMES>\n",
-                    'pip_extra_index = "<REPLACE_PIP_EXTRA_INDEX_URL>"\n',
                 ],
             }
         ],
