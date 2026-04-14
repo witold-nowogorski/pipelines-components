@@ -16,3 +16,5 @@ allowed_image_patterns:
   - '^ghcr\.io/kubeflow/.*$'
   - '^python:\d+\.\d+.*$'
   - '^registry\.redhat\.io/.*$'
+  # Managed OpenShift AI runtime images (AutoML / AutoRAG); tag varies (e.g. odh-stable, odh-pr).
+  - '^quay\.io/opendatahub/odh-[\w-]+:odh-.+$'

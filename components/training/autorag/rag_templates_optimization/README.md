@@ -16,16 +16,62 @@ Carries out the iterative RAG optimization process.
 | `test_data` | `dsl.InputPath(dsl.Artifact)` | `None` | A path pointing to test data used for evaluating RAG pattern quality. |
 | `search_space_prep_report` | `dsl.InputPath(dsl.Artifact)` | `None` | A path pointing to a .yml file containig short report on the experiment's first phase (search space preparation). |
 | `rag_patterns` | `dsl.Output[dsl.Artifact]` | `None` | kfp-enforced argument specifying an output artifact. Provided by kfp backend automatically. |
-| `autorag_run_artifact` | `dsl.Output[dsl.Artifact]` | `None` | kfp-enforced argument specifying an output artifact. Provided by kfp backend atomatically. |
 | `embedded_artifact` | `dsl.EmbeddedInput[dsl.Dataset]` | `None` | kfp-enforced argument to allow access of base64 encoded dir with notebook templates. |
+| `test_data_key` | `Optional[str]` | `None` | Path to the benchmark JSON file in object storage used by generated notebooks. |
 | `chat_model_url` | `Optional[str]` | `None` | Inference endpoint URL for the chat/generation model (OpenAI-compatible). Required for in-memory scenario. |
 | `chat_model_token` | `Optional[str]` | `None` | Optional API token for the chat model endpoint. Omit if deployment has no auth. |
 | `embedding_model_url` | `Optional[str]` | `None` | Inference endpoint URL for the embedding model. Required for in-memory scenario. |
 | `embedding_model_token` | `Optional[str]` | `None` | Optional API token for the embedding model endpoint. Omit if no auth. |
-| `llama_stack_vector_database_id` | `Optional[str]` | `None` | Vector database identifier as registered in llama-stack. |
+| `llama_stack_vector_io_provider_id` | `Optional[str]` | `None` | Vector I/O provider identifier as registered in llama-stack. |
 | `optimization_settings` | `Optional[dict]` | `None` | Additional settings customising the experiment. |
-| `input_data_key` | `Optional[str]` | `None` | A path to documents dir within a bucket used as an input to AI4RAG experiment. |
-| `test_data_key` | `Optional[str]` | `None` | A path to test data file within a bucket used as an input to AI4RAG experiment. |
+| `input_data_key` | `Optional[str]` | `""` | A path to documents dir within a bucket used as an input to AI4RAG experiment. |
+
+## Usage Examples 🧪
+
+```python
+"""Example pipelines demonstrating usage of rag_templates_optimization."""
+
+from kfp import dsl
+from kfp_components.components.training.autorag.rag_templates_optimization import (
+    rag_templates_optimization,
+)
+
+
+@dsl.pipeline(name="rag-templates-optimization-example")
+def example_pipeline(
+    test_data_key: str = "questions",
+    llama_stack_vector_io_provider_id: str = "milvus",
+    input_data_key: str = "",
+):
+    """Example pipeline using rag_templates_optimization.
+
+    Args:
+        test_data_key: Key for the test data.
+        llama_stack_vector_io_provider_id: Vector I/O provider identifier.
+        input_data_key: Key for the input data.
+    """
+    extracted_text = dsl.importer(
+        artifact_uri="gs://placeholder/extracted_text",
+        artifact_class=dsl.Artifact,
+    )
+    test_data = dsl.importer(
+        artifact_uri="gs://placeholder/test_data",
+        artifact_class=dsl.Artifact,
+    )
+    search_space_prep_report = dsl.importer(
+        artifact_uri="gs://placeholder/search_space_prep_report",
+        artifact_class=dsl.Artifact,
+    )
+    rag_templates_optimization(
+        extracted_text=extracted_text.output,
+        test_data=test_data.output,
+        search_space_prep_report=search_space_prep_report.output,
+        test_data_key=test_data_key,
+        llama_stack_vector_io_provider_id=llama_stack_vector_io_provider_id,
+        input_data_key=input_data_key,
+    )
+
+```
 
 ## Metadata 🗂️
 

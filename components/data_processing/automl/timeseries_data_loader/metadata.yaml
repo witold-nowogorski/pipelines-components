@@ -1,0 +1,13 @@
+---
+name: timeseries_data_loader
+stability: alpha
+dependencies:
+  kubeflow:
+    - name: Pipelines
+      version: '>=2.15.2'
+tags:
+  - data-processing
+  - timeseries
+  - automl
+  - data-loading
+lastVerified: 2026-04-02T00:00:00Z

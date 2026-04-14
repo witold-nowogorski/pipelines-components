@@ -248,6 +248,7 @@ $RECYCLE.BIN/
 *.env
 !.env.example
 !.env.sample
+!.env.template
 .envrc
 
 # Secrets and credentials
@@ -383,3 +384,7 @@ tensorboard/
 
 # Exception for scripts/lib which is our shared Python library
 !scripts/lib/
+
+# Exception: test data CSVs under tests/data/
+!**/tests/data/
+!**/tests/data/*.csv

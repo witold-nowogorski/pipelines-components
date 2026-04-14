@@ -2,17 +2,11 @@ from pathlib import Path
 from typing import Optional
 
 from kfp import dsl
+from kfp_components.utils.consts import AUTORAG_IMAGE  # pyright: ignore[reportMissingImports]
 
 
 @dsl.component(
-    base_image="registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:f9844dc150592a9f196283b3645dda92bd80dfdb3d467fa8725b10267ea5bdbc",
-    packages_to_install=[
-        "ai4rag@git+https://github.com/IBM/ai4rag.git",
-        "pyyaml",
-        "pysqlite3-binary",  # ChromaDB requires sqlite3 >= 3.35; base image has older sqlite
-        "llama-stack-client",
-        "openai",
-    ],
+    base_image=AUTORAG_IMAGE,  # noqa: E501
     embedded_artifact_path=str((Path(__file__).parent / "notebook_templates")),
 )
 def rag_templates_optimization(
@@ -20,16 +14,15 @@ def rag_templates_optimization(
     test_data: dsl.InputPath(dsl.Artifact),
     search_space_prep_report: dsl.InputPath(dsl.Artifact),
     rag_patterns: dsl.Output[dsl.Artifact],
-    autorag_run_artifact: dsl.Output[dsl.Artifact],
     embedded_artifact: dsl.EmbeddedInput[dsl.Dataset],
+    test_data_key: Optional[str],
     chat_model_url: Optional[str] = None,
     chat_model_token: Optional[str] = None,
     embedding_model_url: Optional[str] = None,
     embedding_model_token: Optional[str] = None,
-    llama_stack_vector_database_id: Optional[str] = None,
+    llama_stack_vector_io_provider_id: Optional[str] = None,
     optimization_settings: Optional[dict] = None,
-    input_data_key: Optional[str] = None,
-    test_data_key: Optional[str] = None,
+    input_data_key: Optional[str] = "",
 ):
     """RAG Templates Optimization component.
 
@@ -45,9 +38,9 @@ def rag_templates_optimization(
 
         rag_patterns: kfp-enforced argument specifying an output artifact. Provided by kfp backend automatically.
 
-        autorag_run_artifact: kfp-enforced argument specifying an output artifact. Provided by kfp backend atomatically.
-
         embedded_artifact: kfp-enforced argument to allow access of base64 encoded dir with notebook templates.
+
+        test_data_key: Path to the benchmark JSON file in object storage used by generated notebooks.
 
         chat_model_url: Inference endpoint URL for the chat/generation model (OpenAI-compatible).
             Required for in-memory scenario.
@@ -58,19 +51,15 @@ def rag_templates_optimization(
 
         embedding_model_token: Optional API token for the embedding model endpoint. Omit if no auth.
 
-        vector_database: An identificator of the vector store used in the experiment.
-
-        llama_stack_vector_database_id: Vector database identifier as registered in llama-stack.
+        llama_stack_vector_io_provider_id: Vector I/O provider identifier as registered in llama-stack.
 
         optimization_settings: Additional settings customising the experiment.
 
         input_data_key: A path to documents dir within a bucket used as an input to AI4RAG experiment.
-        test_data_key: A path to test data file within a bucket used as an input to AI4RAG experiment.
 
     Returns:
         rag_patterns: Folder containing all generated RAG patterns (each subdir: pattern.json,
             indexing_notebook.ipynb, inference_notebook.ipynb).
-        autorag_run_artifact: Run log and experiment status (TODO).
     """
     # ChromaDB (via ai4rag) requires sqlite3 >= 3.35; RHEL9 base image has older sqlite.
     # Patch stdlib sqlite3 with pysqlite3-binary before any ai4rag import.
@@ -83,7 +72,9 @@ def rag_templates_optimization(
     except ImportError:
         pass
 
+    import logging
     import os
+    import ssl
     from collections import namedtuple
     from json import dump as json_dump
     from json import load as json_load
@@ -91,6 +82,7 @@ def rag_templates_optimization(
     from string import Formatter
     from typing import Any, Literal, Self
 
+    import httpx
     import pandas as pd
     import yaml as yml
     from ai4rag.core.experiment.experiment import AI4RAGExperiment
@@ -106,12 +98,105 @@ def rag_templates_optimization(
     from ai4rag.search_space.src.search_space import AI4RAGSearchSpace
     from ai4rag.utils.event_handler.event_handler import BaseEventHandler, LogLevel
     from langchain_core.documents import Document
+    from llama_stack_client import APIConnectionError as LSAPIConnectionError
     from llama_stack_client import LlamaStackClient
+    from openai import APIConnectionError as OAIAPIConnectionError
     from openai import OpenAI
 
-    MAX_NUMBER_OF_RAG_PATTERNS = 8
+    DEFAULT_MAX_NUMBER_OF_RAG_PATTERNS = 8
+    MAX_NUMBER_OF_RAG_PATTERNS_ALLOWED_RANGE = (4, 20)
     METRIC = "faithfulness"
     SUPPORTED_OPTIMIZATION_METRICS = frozenset({"faithfulness", "answer_correctness", "context_correctness"})
+    _ssl_logger = logging.getLogger(__name__)
+
+    def _is_ssl_error(exc: BaseException) -> bool:
+        """Check whether an exception (or its cause/context chain) is an SSL verification failure."""
+        seen = set()
+        current: BaseException | None = exc
+        while current is not None and id(current) not in seen:
+            seen.add(id(current))
+            msg = str(current).upper()
+            if "CERTIFICATE_VERIFY_FAILED" in msg or "SSL" in msg:
+                return True
+            current = current.__cause__ or current.__context__
+        return False
+
+    # Mutable containers so the nested _create_openai_client can update the flags
+    # without requiring `nonlocal` or returning the flag.
+    _chat_ssl_verify = [True]
+    _embedding_ssl_verify = [True]
+
+    def _create_openai_client(api_key: str, base_url: str, _ssl_verify: list) -> OpenAI:
+        """Create OpenAI client, falling back to SSL-unverified if self-signed cert detected."""
+        client = OpenAI(api_key=api_key, base_url=base_url)
+        try:
+            client.models.list()
+        except (ssl.SSLCertVerificationError, httpx.ConnectError, OAIAPIConnectionError) as exc:
+            if _is_ssl_error(exc):
+                _ssl_logger.warning(
+                    "SSL verification failed for %s — retrying with verify=False. ",
+                    base_url,
+                )
+                client = OpenAI(
+                    api_key=api_key,
+                    base_url=base_url,
+                    http_client=httpx.Client(verify=False),
+                )
+                _ssl_verify[0] = False
+            else:
+                raise
+        return client
+
+    # Mutable container so the nested _create_llama_stack_client can update the flag
+    # without requiring `nonlocal` or returning the flag.
+    _ls_ssl_verify = [True]
+
+    def _create_llama_stack_client(**kwargs) -> LlamaStackClient:
+        """Create LlamaStackClient, falling back to SSL-unverified if self-signed cert detected."""
+        client = LlamaStackClient(**kwargs)
+        try:
+            client.models.list()
+        except (ssl.SSLCertVerificationError, httpx.ConnectError, LSAPIConnectionError) as exc:
+            if _is_ssl_error(exc):
+                _ssl_logger.warning("SSL verification failed for LlamaStackClient — retrying with verify=False. ")
+                client = LlamaStackClient(
+                    **kwargs,
+                    http_client=httpx.Client(verify=False),
+                )
+                _ls_ssl_verify[0] = False
+            else:
+                raise
+        return client
+
+    if not isinstance(test_data_key, str) or not test_data_key.strip() or not test_data_key.lower().endswith(".json"):
+        raise ValueError("test_data_path must point to a JSON file")
+
+    if optimization_settings is not None:
+        if not isinstance(optimization_settings, dict):
+            raise TypeError("optimization_settings must be a dictionary.")
+        max_rag_patterns = optimization_settings.get("max_number_of_rag_patterns", DEFAULT_MAX_NUMBER_OF_RAG_PATTERNS)
+        if isinstance(max_rag_patterns, str):
+            try:
+                max_rag_patterns = int(max_rag_patterns.strip())
+            except ValueError as exc:
+                raise ValueError(
+                    "optimization_settings.max_number_of_rag_patterns must be a valid integer "
+                    f"(e.g. from the pipeline UI); got {max_rag_patterns!r}."
+                ) from exc
+        if not isinstance(max_rag_patterns, int):
+            raise TypeError("optimization_settings.max_number_of_rag_patterns must be an integer.")
+
+        _ssl_logger.info("max_number_of_rag_patterns %s", max_rag_patterns)
+        if not (
+            MAX_NUMBER_OF_RAG_PATTERNS_ALLOWED_RANGE[0]
+            <= max_rag_patterns
+            <= MAX_NUMBER_OF_RAG_PATTERNS_ALLOWED_RANGE[1]
+        ):
+            raise ValueError(
+                f"optimization_settings.max_number_of_rag_patterns must be in a range"
+                f"{MAX_NUMBER_OF_RAG_PATTERNS_ALLOWED_RANGE[0]} to "
+                f"{MAX_NUMBER_OF_RAG_PATTERNS_ALLOWED_RANGE[1]}."
+            )
 
     class NotebookCell:
         """Represents a single cell in a Jupyter notebook.
@@ -282,19 +367,24 @@ def rag_templates_optimization(
             notebook_name: Literal[
                 "ls_indexing_template.ipynb",
                 "ls_inference_template.ipynb",
-                "chroma_teamplate.ipynb",
+                "chroma_template.ipynb",
             ],
         ) -> "Notebook":
             """Load a Jupyter notebook from a file.
 
-            Args:
-                notebook_name: One of the allowed template names.
+            Parameters
+            ----------
+            path : str | Path
+                Input file path to the .ipynb file.
 
             Returns:
-                Notebook: A new Notebook instance populated with the loaded cells and metadata.
+            -------
+            Notebook
+                A new Notebook instance populated with the loaded cells and metadata.
 
             Examples:
-                >>> nb = Notebook.load("existing_notebook.ipynb")
+            --------
+            >>> nb = Notebook.load("existing_notebook.ipynb")
             """
             with open(Path(embedded_artifact.path) / notebook_name, "r") as f:
                 nb_dict = json_load(f)
@@ -341,6 +431,9 @@ def rag_templates_optimization(
         input_data_key: str = "",
         chat_model_url: str = "",
         embedding_model_url: str = "",
+        ls_ssl_verify: bool = True,
+        chat_ssl_verify: bool = True,
+        embedding_ssl_verify: bool = True,
     ) -> dict[str, Any]:
         """Create a mapping from placeholder names to their values from output.json.
 
@@ -369,6 +462,9 @@ def rag_templates_optimization(
             input_data_key: Input data key.
             chat_model_url: Chat model url.
             embedding_model_url: Embedding model url.
+            ls_ssl_verify: Whether LlamaStack SSL verification succeeded.
+            chat_ssl_verify: Whether chat model (OpenAI) SSL verification succeeded.
+            embedding_ssl_verify: Whether embedding model (OpenAI) SSL verification succeeded.
 
         Returns:
             Dictionary mapping placeholder names to their values.
@@ -406,6 +502,9 @@ def rag_templates_optimization(
 
         mapping["CHAT_MODEL_URL"] = chat_model_url
         mapping["EMBEDDING_MODEL_URL"] = embedding_model_url
+        mapping["LS_SSL_VERIFY"] = ls_ssl_verify
+        mapping["CHAT_SSL_VERIFY"] = chat_ssl_verify
+        mapping["EMBEDDING_SSL_VERIFY"] = embedding_ssl_verify
 
         return mapping
 
@@ -419,6 +518,9 @@ def rag_templates_optimization(
         output_notebook_path: Path,
         test_data_key: str = "",
         input_data_key: str = "",
+        ls_ssl_verify: bool = True,
+        chat_ssl_verify: bool = True,
+        embedding_ssl_verify: bool = True,
     ) -> None:
         """Generate a filled notebook from templates and output.json.
 
@@ -428,6 +530,10 @@ def rag_templates_optimization(
             output_notebook_path: Path where to save the generated notebook.
             test_data_key: Path to test data file within bucket used as input to AI4RAG.
             input_data_key: Path to documents dir within bucket used as input to AI4RAG.
+            ls_ssl_verify: Whether LlamaStack SSL verification succeeded; False causes the
+                generated notebook to skip the SSL probe and connect with verify=False directly.
+            chat_ssl_verify: Whether chat model (OpenAI) SSL verification succeeded.
+            embedding_ssl_verify: Whether embedding model (OpenAI) SSL verification succeeded.
 
         Returns:
             None. The notebook is written to output_notebook_path.
@@ -438,6 +544,9 @@ def rag_templates_optimization(
             input_data_key=input_data_key,
             chat_model_url=chat_model_url,
             embedding_model_url=embedding_model_url,
+            ls_ssl_verify=ls_ssl_verify,
+            chat_ssl_verify=chat_ssl_verify,
+            embedding_ssl_verify=embedding_ssl_verify,
         )
         notebook = Notebook.load(notebook_name=f"{notebook_template}_template.ipynb")
         filled_cells = []
@@ -503,8 +612,16 @@ def rag_templates_optimization(
     )
 
     if llama_stack_client_base_url and llama_stack_client_api_key:
-        client = Client(llama_stack=LlamaStackClient())
+        client = Client(llama_stack=_create_llama_stack_client())
     else:
+        for name, value in (
+            ("chat_model_url", chat_model_url),
+            ("chat_model_token", chat_model_token),
+            ("embedding_model_url", embedding_model_url),
+            ("embedding_model_token", embedding_model_token),
+        ):
+            if not value:
+                raise TypeError(f"{name} must be a non-empty string.")
         if not all(
             (
                 chat_model_url,
@@ -518,8 +635,12 @@ def rag_templates_optimization(
                 "have to be defined when running AutoRAG experiment using an in-memory vector store."
             )
         client = Client(
-            generation_model=OpenAI(api_key=chat_model_token, base_url=chat_model_url),
-            embedding_model=OpenAI(api_key=embedding_model_token, base_url=embedding_model_url),
+            generation_model=_create_openai_client(
+                api_key=chat_model_token, base_url=chat_model_url, _ssl_verify=_chat_ssl_verify
+            ),
+            embedding_model=_create_openai_client(
+                api_key=embedding_model_token, base_url=embedding_model_url, _ssl_verify=_embedding_ssl_verify
+            ),
         )
         in_memory_vector_store_scenario = True
 
@@ -566,15 +687,36 @@ def rag_templates_optimization(
     )
 
     event_handler = TmpEventHandler()
-    max_rag_patterns = optimization_settings.get("max_number_of_rag_patterns", MAX_NUMBER_OF_RAG_PATTERNS)
-    optimizer_settings = GAMOptSettings(max_evals=int(max_rag_patterns))
+    max_rag_patterns = optimization_settings.get("max_number_of_rag_patterns", DEFAULT_MAX_NUMBER_OF_RAG_PATTERNS)
+    if isinstance(max_rag_patterns, str):
+        try:
+            max_rag_patterns = int(max_rag_patterns.strip())
+        except ValueError as exc:
+            raise ValueError(
+                "optimization_settings.max_number_of_rag_patterns must be a valid integer "
+                f"(e.g. from the pipeline UI); got {max_rag_patterns!r}."
+            ) from exc
+    optimizer_settings = GAMOptSettings(max_evals=max_rag_patterns)
 
     benchmark_data = pd.read_json(Path(test_data))
 
-    if not llama_stack_vector_database_id and in_memory_vector_store_scenario:
-        llama_stack_vector_database_id = "chroma"
-    elif not llama_stack_vector_database_id:
-        llama_stack_vector_database_id = "ls_milvus"
+    if not llama_stack_vector_io_provider_id or not llama_stack_vector_io_provider_id.strip():
+        if in_memory_vector_store_scenario:
+            llama_stack_vector_io_provider_id = "chroma"
+        else:
+            raise ValueError(
+                "llama_stack_vector_io_provider_id must be provided when using llama-stack vector database."
+            )
+
+    # ai4rag expects vector_store_type with an "ls_" prefix for llama-stack providers.
+    # Users provide the raw llama-stack provider_id (e.g. "milvus"); the prefix is added here.
+    # If the user already included "ls_", don't double-prefix.
+    if in_memory_vector_store_scenario:
+        vector_store_type = llama_stack_vector_io_provider_id
+    elif llama_stack_vector_io_provider_id.startswith("ls_"):
+        vector_store_type = llama_stack_vector_io_provider_id
+    else:
+        vector_store_type = f"ls_{llama_stack_vector_io_provider_id}"
 
     rag_exp = AI4RAGExperiment(
         client=None if in_memory_vector_store_scenario else client.llama_stack,
@@ -582,7 +724,7 @@ def rag_templates_optimization(
         optimizer_settings=optimizer_settings,
         search_space=search_space,
         benchmark_data=benchmark_data,
-        vector_store_type=llama_stack_vector_database_id,
+        vector_store_type=vector_store_type,
         documents=documents,
         optimization_metric=optimization_metric,
         # TODO some necessary kwargs (if any at all)
@@ -666,7 +808,7 @@ def rag_templates_optimization(
                 "vector_store": {
                     "datasource_type": idx.get("vector_store", {}).get("datasource_type")
                     or rp.get("vector_store", {}).get("datasource_type")
-                    or "ls_milvus",
+                    or vector_store_type,
                     "collection_name": getattr(evaluation_result, "collection", "") or "",
                 },
                 "chunking": {
@@ -723,13 +865,15 @@ def rag_templates_optimization(
         patt_dir.mkdir(parents=True, exist_ok=True)
 
         pattern_data = _build_pattern_json(eval, iteration=i, max_combinations=max_combinations)
-        if llama_stack_vector_database_id == "chroma":
+        if llama_stack_vector_io_provider_id == "chroma":
             generate_notebook_from_templates(
                 "chroma",
                 pattern_data,
                 Path(patt_dir, "indexing_and_inference.ipynb"),
                 input_data_key=input_data_key,
                 test_data_key=test_data_key,
+                chat_ssl_verify=_chat_ssl_verify[0],
+                embedding_ssl_verify=_embedding_ssl_verify[0],
             )
         else:
             generate_notebook_from_templates(
@@ -737,6 +881,7 @@ def rag_templates_optimization(
                 pattern_data,
                 Path(patt_dir, "indexing.ipynb"),
                 input_data_key=input_data_key,
+                ls_ssl_verify=_ls_ssl_verify[0],
             )
 
             generate_notebook_from_templates(
@@ -744,6 +889,7 @@ def rag_templates_optimization(
                 pattern_data,
                 Path(patt_dir, "inference.ipynb"),
                 test_data_key=test_data_key,
+                ls_ssl_verify=_ls_ssl_verify[0],
             )
 
         # Flat schema: scores = per-metric aggregates (mean, ci_low, ci_high); final_score
