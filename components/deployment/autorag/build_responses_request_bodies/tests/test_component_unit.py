@@ -189,6 +189,7 @@ class TestBuildLlamaStackV1ResponsesBody:
 
     def test_script_supports_custom_ca_bundle_and_insecure_tls(self, tmp_path):
         """Generated helper exposes CA-bundle env vars and a dev-only insecure flag.
+
         Covers the corporate-PKI / dev-cluster TLS gap: the script must build an
         explicit ``ssl.SSLContext`` that honors ``REQUESTS_CA_BUNDLE`` /
         ``SSL_CERT_FILE`` for private CAs, and ``LLAMA_STACK_TLS_INSECURE`` as a
