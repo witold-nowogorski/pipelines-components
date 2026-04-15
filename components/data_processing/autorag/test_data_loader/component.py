@@ -7,18 +7,29 @@ from kfp_components.utils.consts import AUTORAG_IMAGE  # pyright: ignore[reportM
 @dsl.component(
     base_image=AUTORAG_IMAGE,  # noqa: E501
 )
-def test_data_loader(test_data_bucket_name: str, test_data_path: str, test_data: dsl.Output[dsl.Artifact] = None):
+def test_data_loader(
+    test_data_bucket_name: str,
+    test_data_path: str,
+    sample_size: int = 25,
+    test_data: dsl.Output[dsl.Artifact] = None,
+):
     """Download test data json file from S3 into a KFP artifact.
 
     The component reads S3-compatible credentials from environment variables
     (injected by the pipeline from a Kubernetes secret) and downloads a JSON
     test data file from the provided bucket and path to the output artifact.
+    If the JSON is a list with more than ``sample_size`` entries, a deterministic
+    random sample of ``sample_size`` questions is written to the artifact instead
+    of the full file.
 
     Args:
         test_data_bucket_name: S3 (or compatible) bucket that contains the test
             data file.
         test_data_path: S3 object key to the JSON test data file.
-        test_data: Output artifact that receives the downloaded file.
+        sample_size: Number of questions to keep from the benchmark. Set to 0 or
+            a negative value to disable sampling. Defaults to 25.
+        test_data: Output artifact that receives the downloaded (and optionally
+            sampled) file.
 
     Environment variables (required when run with pipeline secret injection):
         AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT.
@@ -31,6 +42,7 @@ def test_data_loader(test_data_bucket_name: str, test_data_path: str, test_data:
     import json
     import logging
     import os
+    import random
     import sys
 
     import boto3
@@ -98,9 +110,22 @@ def test_data_loader(test_data_bucket_name: str, test_data_path: str, test_data:
 
         try:
             with open(test_data.path, "r") as f:
-                json.load(f)
+                benchmark = json.load(f)
         except JSONDecodeError as e:
             raise TestDataLoaderException("test_data_path must point to a valid JSON file.") from e
+
+        sample_seed = 10
+        if sample_size and sample_size > 0 and isinstance(benchmark, list) and len(benchmark) > sample_size:
+            logger.info(
+                "Sampling %d of %d benchmark questions (seed=%d)",
+                sample_size,
+                len(benchmark),
+                sample_seed,
+            )
+            rng = random.Random(sample_seed)
+            sampled = rng.sample(benchmark, sample_size)
+            with open(test_data.path, "w") as f:
+                json.dump(sampled, f)
 
     get_test_data_s3()
 
