@@ -150,6 +150,39 @@ class TestDocumentsDiscoveryUnitTests:
                     discovered_documents=discovered,
                 )
 
+    @mock.patch.dict(
+        "os.environ",
+        {k: v for k, v in MOCKED_ENV_VARIABLES.items() if k != "AWS_DEFAULT_REGION"},
+        clear=True,
+    )
+    def test_missing_aws_default_region_is_optional(self, tmp_path):
+        """AWS_DEFAULT_REGION absence is tolerated and passed as None to boto3."""
+        mock_boto3 = mock.MagicMock()
+        mock_s3 = mock.MagicMock()
+        mock_s3.list_objects_v2.return_value = {"Contents": [{"Key": "docs/a.pdf", "Size": 1000}]}
+        mock_boto3.client.return_value = mock_s3
+        mock_botocore, mock_botocore_exceptions = _make_botocore_modules()
+
+        discovered = mock.MagicMock()
+        discovered.path = str(tmp_path / "descriptor")
+
+        with mock.patch.dict(
+            sys.modules,
+            {
+                "boto3": mock_boto3,
+                "botocore": mock_botocore,
+                "botocore.exceptions": mock_botocore_exceptions,
+            },
+        ):
+            documents_discovery.python_func(
+                input_data_bucket_name="my-bucket",
+                input_data_path="docs/",
+                discovered_documents=discovered,
+                sampling_enabled=False,
+            )
+
+        assert mock_boto3.client.call_args.kwargs["region_name"] is None
+
     @mock.patch.dict("os.environ", MOCKED_ENV_VARIABLES, clear=True)
     def test_no_supported_documents_raises_exception(self, tmp_path):
         """No supported extension in S3 listing raises a component exception."""

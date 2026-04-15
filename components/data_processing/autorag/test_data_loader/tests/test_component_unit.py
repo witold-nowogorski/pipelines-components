@@ -187,6 +187,45 @@ class TestTestDataLoaderUnitTests:
                     test_data=artifact,
                 )
 
+    @mock.patch.dict(
+        "os.environ",
+        {k: v for k, v in MOCKED_ENV_VARIABLES.items() if k != "AWS_DEFAULT_REGION"},
+        clear=True,
+    )
+    def test_missing_aws_default_region_is_optional(self, tmp_path):
+        """AWS_DEFAULT_REGION absence is tolerated and passed as None to boto3."""
+        mock_boto3 = mock.MagicMock()
+        mock_s3 = mock.MagicMock()
+
+        out_path = tmp_path / "test_data.json"
+
+        def _write_valid_json(_bucket, _key, destination):
+            with open(destination, "w", encoding="utf-8") as f:
+                json.dump({"dataset": "ok"}, f)
+
+        mock_s3.download_file.side_effect = _write_valid_json
+        mock_boto3.client.return_value = mock_s3
+        mock_botocore, mock_botocore_exceptions = _mock_botocore_modules()
+
+        artifact = mock.MagicMock()
+        artifact.path = str(out_path)
+
+        with mock.patch.dict(
+            sys.modules,
+            {
+                "boto3": mock_boto3,
+                "botocore": mock_botocore,
+                "botocore.exceptions": mock_botocore_exceptions,
+            },
+        ):
+            test_data_loader.python_func(
+                test_data_bucket_name="my-bucket",
+                test_data_path="data/test.json",
+                test_data=artifact,
+            )
+
+        assert mock_boto3.client.call_args.kwargs["region_name"] is None
+
     @mock.patch.dict("os.environ", MOCKED_ENV_VARIABLES, clear=True)
     def test_missing_s3_object_raises_file_not_found_error(self, tmp_path):
         """S3 404/NoSuchKey maps to FileNotFoundError with key/bucket context."""
