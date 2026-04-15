@@ -289,6 +289,177 @@ class TestTestDataLoaderUnitTests:
                 )
 
     @mock.patch.dict("os.environ", MOCKED_ENV_VARIABLES, clear=True)
+    def test_sampling_reduces_large_benchmark_deterministically(self, tmp_path):
+        """Benchmark larger than sample_size is sampled deterministically."""
+        mock_boto3 = mock.MagicMock()
+        mock_s3 = mock.MagicMock()
+
+        out_path = tmp_path / "test_data.json"
+        full_benchmark = [{"id": i} for i in range(100)]
+
+        def _write_full_benchmark(_bucket, _key, destination):
+            with open(destination, "w", encoding="utf-8") as f:
+                json.dump(full_benchmark, f)
+
+        mock_s3.download_file.side_effect = _write_full_benchmark
+        mock_boto3.client.return_value = mock_s3
+        mock_botocore, mock_botocore_exceptions = _mock_botocore_modules()
+
+        artifact = mock.MagicMock()
+        artifact.path = str(out_path)
+
+        with mock.patch.dict(
+            sys.modules,
+            {
+                "boto3": mock_boto3,
+                "botocore": mock_botocore,
+                "botocore.exceptions": mock_botocore_exceptions,
+            },
+        ):
+            test_data_loader.python_func(
+                test_data_bucket_name="my-bucket",
+                test_data_path="data/test.json",
+                sample_size=25,
+                test_data=artifact,
+            )
+
+        written = json.loads(out_path.read_text(encoding="utf-8"))
+        assert isinstance(written, list)
+        assert len(written) == 25
+        for item in written:
+            assert item in full_benchmark
+
+        out_path.write_text("")
+        with mock.patch.dict(
+            sys.modules,
+            {
+                "boto3": mock_boto3,
+                "botocore": mock_botocore,
+                "botocore.exceptions": mock_botocore_exceptions,
+            },
+        ):
+            test_data_loader.python_func(
+                test_data_bucket_name="my-bucket",
+                test_data_path="data/test.json",
+                sample_size=25,
+                test_data=artifact,
+            )
+
+        second_written = json.loads(out_path.read_text(encoding="utf-8"))
+        assert second_written == written
+
+    @mock.patch.dict("os.environ", MOCKED_ENV_VARIABLES, clear=True)
+    def test_sampling_skipped_when_benchmark_not_larger_than_sample_size(self, tmp_path):
+        """Benchmark with size <= sample_size is left untouched."""
+        mock_boto3 = mock.MagicMock()
+        mock_s3 = mock.MagicMock()
+
+        out_path = tmp_path / "test_data.json"
+        small_benchmark = [{"id": i} for i in range(10)]
+
+        def _write_small_benchmark(_bucket, _key, destination):
+            with open(destination, "w", encoding="utf-8") as f:
+                json.dump(small_benchmark, f)
+
+        mock_s3.download_file.side_effect = _write_small_benchmark
+        mock_boto3.client.return_value = mock_s3
+        mock_botocore, mock_botocore_exceptions = _mock_botocore_modules()
+
+        artifact = mock.MagicMock()
+        artifact.path = str(out_path)
+
+        with mock.patch.dict(
+            sys.modules,
+            {
+                "boto3": mock_boto3,
+                "botocore": mock_botocore,
+                "botocore.exceptions": mock_botocore_exceptions,
+            },
+        ):
+            test_data_loader.python_func(
+                test_data_bucket_name="my-bucket",
+                test_data_path="data/test.json",
+                sample_size=25,
+                test_data=artifact,
+            )
+
+        assert json.loads(out_path.read_text(encoding="utf-8")) == small_benchmark
+
+    @mock.patch.dict("os.environ", MOCKED_ENV_VARIABLES, clear=True)
+    def test_sampling_disabled_when_sample_size_is_zero(self, tmp_path):
+        """sample_size=0 disables sampling even for large benchmarks."""
+        mock_boto3 = mock.MagicMock()
+        mock_s3 = mock.MagicMock()
+
+        out_path = tmp_path / "test_data.json"
+        full_benchmark = [{"id": i} for i in range(100)]
+
+        def _write_full_benchmark(_bucket, _key, destination):
+            with open(destination, "w", encoding="utf-8") as f:
+                json.dump(full_benchmark, f)
+
+        mock_s3.download_file.side_effect = _write_full_benchmark
+        mock_boto3.client.return_value = mock_s3
+        mock_botocore, mock_botocore_exceptions = _mock_botocore_modules()
+
+        artifact = mock.MagicMock()
+        artifact.path = str(out_path)
+
+        with mock.patch.dict(
+            sys.modules,
+            {
+                "boto3": mock_boto3,
+                "botocore": mock_botocore,
+                "botocore.exceptions": mock_botocore_exceptions,
+            },
+        ):
+            test_data_loader.python_func(
+                test_data_bucket_name="my-bucket",
+                test_data_path="data/test.json",
+                sample_size=0,
+                test_data=artifact,
+            )
+
+        assert json.loads(out_path.read_text(encoding="utf-8")) == full_benchmark
+
+    @mock.patch.dict("os.environ", MOCKED_ENV_VARIABLES, clear=True)
+    def test_sampling_skipped_for_non_list_json(self, tmp_path):
+        """Non-list JSON (e.g. dict) is not sampled."""
+        mock_boto3 = mock.MagicMock()
+        mock_s3 = mock.MagicMock()
+
+        out_path = tmp_path / "test_data.json"
+        payload = {"dataset": "ok", "items": list(range(100))}
+
+        def _write_dict(_bucket, _key, destination):
+            with open(destination, "w", encoding="utf-8") as f:
+                json.dump(payload, f)
+
+        mock_s3.download_file.side_effect = _write_dict
+        mock_boto3.client.return_value = mock_s3
+        mock_botocore, mock_botocore_exceptions = _mock_botocore_modules()
+
+        artifact = mock.MagicMock()
+        artifact.path = str(out_path)
+
+        with mock.patch.dict(
+            sys.modules,
+            {
+                "boto3": mock_boto3,
+                "botocore": mock_botocore,
+                "botocore.exceptions": mock_botocore_exceptions,
+            },
+        ):
+            test_data_loader.python_func(
+                test_data_bucket_name="my-bucket",
+                test_data_path="data/test.json",
+                sample_size=25,
+                test_data=artifact,
+            )
+
+        assert json.loads(out_path.read_text(encoding="utf-8")) == payload
+
+    @mock.patch.dict("os.environ", MOCKED_ENV_VARIABLES, clear=True)
     def test_unexpected_download_error_is_wrapped(self, tmp_path):
         """Unexpected download exceptions are wrapped by component exception."""
         mock_boto3 = mock.MagicMock()
