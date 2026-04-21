@@ -45,6 +45,11 @@ def automl_data_loader(  # noqa: D417
     For **regression** tasks the split is random; for **binary** and **multiclass**
     tasks the split is **stratified** by the label column by default.
 
+    Rows with a missing label (NaN / empty in ``label_column``) are dropped after load
+    and before splitting, so regression runs do not propagate null targets into splits
+    or the ``sample_row`` JSON (stratified sampling already dropped per chunk; this
+    applies the same rule to random and first-n-rows paths).
+
     Authentication uses AWS-style credentials provided via environment variables
     (e.g. from a Kubernetes secret).
 
@@ -304,6 +309,30 @@ def automl_data_loader(  # noqa: D417
         sampling_method=sampling_method,
         label_column=label_column,
     )
+
+    if label_column not in sampled_dataframe.columns:
+        raise ValueError(
+            f"Label column {label_column!r} not found in the dataset. "
+            f"Available columns: {list(sampled_dataframe.columns)}"
+        )
+
+    n_before_drop = len(sampled_dataframe)
+    sampled_dataframe = sampled_dataframe.dropna(subset=[label_column])
+    n_dropped = n_before_drop - len(sampled_dataframe)
+    if n_dropped:
+        logger.info(
+            "Dropped %s row(s) with missing label in column %r before splitting "
+            "(loaded %s rows, %s remaining).",
+            n_dropped,
+            label_column,
+            n_before_drop,
+            len(sampled_dataframe),
+        )
+    if sampled_dataframe.empty:
+        raise ValueError(
+            f"No rows remain after removing missing values in label column {label_column!r}. "
+            "Ensure the dataset has at least one row with a non-null label (e.g. empty cells in the target column)."
+        )
 
     n_samples = len(sampled_dataframe)
     logger.info("Read %d rows from s3://%s/%s (sampling_method=%s)", n_samples, bucket_name, file_key, sampling_method)
