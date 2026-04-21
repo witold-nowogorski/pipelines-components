@@ -30,7 +30,7 @@ def autogluon_models_training(
 ) -> NamedTuple("outputs", eval_metric=str):
     """Train AutoGluon models, select the top N, and refit each on the full dataset.
 
-    After reading each CSV from disk, **±infinity** is mapped to **NaN**, **full-row
+    After reading each CSV from disk, **+/- infinity** is mapped to **NaN**, **full-row
     duplicates** are removed, and rows with a **missing label** (NaN in ``label_column``)
     are dropped on train, test, and extra-train frames. AutoGluon rejects non-finite
     labels; this matches the tabular loader and AutoAI-style ``loadXy`` cleansing.
@@ -124,7 +124,7 @@ def autogluon_models_training(
     DEFAULT_TIME_LIMIT = 30 * 60  # 30 minutes
 
     def _clean_frame_after_read(df, *, role: str) -> None:
-        """Replace ±inf with NaN, drop full-row duplicates, drop rows with missing label (inplace)."""
+        """Replace +/-inf with NaN, drop full-row duplicates, drop rows with missing label (inplace)."""
         df.replace([math.inf, -math.inf], float("nan"), inplace=True)
         df.drop_duplicates(inplace=True)
         if label_column not in df.columns:
@@ -149,7 +149,7 @@ def autogluon_models_training(
     _clean_frame_after_read(train_data_df, role="train")
     if train_data_df.empty:
         raise ValueError(
-            f"No train rows remain after cleansing (inf→NaN, dedupe, dropna on {label_column!r}). "
+            f"No train rows remain after cleansing (inf to NaN, dedupe, dropna on {label_column!r}). "
             "Ensure the training CSV has at least one row with a finite label."
         )
 
@@ -157,7 +157,7 @@ def autogluon_models_training(
     _clean_frame_after_read(test_data_df, role="test")
     if test_data_df.empty:
         raise ValueError(
-            f"No test rows remain after cleansing (inf→NaN, dedupe, dropna on {label_column!r}). "
+            f"No test rows remain after cleansing (inf to NaN, dedupe, dropna on {label_column!r}). "
             "Ensure the test CSV has at least one row with a finite label."
         )
 
@@ -214,7 +214,7 @@ def autogluon_models_training(
 
     pipeline_name_trimmed = retrieve_pipeline_name(pipeline_name)
 
-    # Strip label column from sample row —- same for all models
+    # Strip label column from sample row -- same for all models
     sample_row_formatted = [
         {col: value for col, value in row.items() if col != predictor.label} for row in sample_row_list
     ]
@@ -314,12 +314,12 @@ def autogluon_models_training(
 
         return model_name_full, eval_results
 
-    # Phase A: metrics + notebooks — all models run concurrently.
+    # Phase A: metrics + notebooks - all models run concurrently.
     with ThreadPoolExecutor(max_workers=len(model_names_full)) as executor:
         futures = [executor.submit(_process_model, name) for name in model_names_full]
         eval_results_by_model = dict(f.result() for f in futures)
 
-    # Phase B: clone for deployment — sequential because set_model_best mutates predictor state.
+    # Phase B: clone for deployment - sequential because set_model_best mutates predictor state.
     for model_name_full in model_names_full:
         output_path = Path(models_artifact.path) / model_name_full
         predictor_clone.set_model_best(model=model_name_full, save_trainer=True)

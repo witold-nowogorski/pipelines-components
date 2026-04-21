@@ -6,7 +6,7 @@
 
 Train AutoGluon models, select the top N, and refit each on the full dataset.
 
-After reading each CSV from disk, **±infinity** is mapped to **NaN**, **full-row duplicates** are removed, and rows with a **missing label** (NaN in ``label_column``) are dropped on train, test, and extra-train frames. AutoGluon rejects non-finite labels; this matches the tabular loader and
+After reading each CSV from disk, **+/- infinity** is mapped to **NaN**, **full-row duplicates** are removed, and rows with a **missing label** (NaN in ``label_column``) are dropped on train, test, and extra-train frames. AutoGluon rejects non-finite labels; this matches the tabular loader and
 AutoAI-style ``loadXy`` cleansing.
 
 This component combines the model selection and full-refit stages into a single step. It trains a TabularPredictor on sampled data, ranks all models on the test set, then refits each of the top N models on the full training data in a single ``refit_full`` call. Post-refit work (predict, evaluate,

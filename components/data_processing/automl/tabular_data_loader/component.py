@@ -50,7 +50,7 @@ def automl_data_loader(  # noqa: D417
     or the ``sample_row`` JSON (stratified sampling already dropped per chunk; this
     applies the same rule to random and first-n-rows paths).
 
-    After sampling, **±infinity** values in the frame are replaced with **NaN** (same
+    After sampling, **+/- infinity** values in the frame are replaced with **NaN** (same
     idea as AutoAI ``loadXy``), then **full-row duplicates** are dropped before the
     label drop and train/test split.
 
