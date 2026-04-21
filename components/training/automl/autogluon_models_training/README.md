@@ -6,6 +6,8 @@
 
 Train AutoGluon models, select the top N, and refit each on the full dataset.
 
+After reading each CSV from disk, **±infinity** is mapped to **NaN** and **full-row duplicates** are removed on train, test, and extra-train frames (aligned with AutoAI ``loadXy`` cleansing before fitting).
+
 This component combines the model selection and full-refit stages into a single step. It trains a TabularPredictor on sampled data, ranks all models on the test set, then refits each of the top N models on the full training data in a single ``refit_full`` call. Post-refit work (predict, evaluate,
 feature importance, confusion matrix, notebook generation) runs concurrently across all top-N models via ``ThreadPoolExecutor``. The deployment clone (``set_model_best`` + ``clone_for_deployment``) is serialized afterward because it mutates predictor state. All artifacts are written under a single
 output artifact so the pipeline does not require a ParallelFor loop. Each model directory contains a ``model.json`` file with model metadata (name, location, metrics).

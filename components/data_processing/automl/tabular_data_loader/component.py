@@ -341,8 +341,7 @@ def automl_data_loader(  # noqa: D417
     n_dropped = n_before_drop - len(sampled_dataframe)
     if n_dropped:
         logger.info(
-            "Dropped %s row(s) with missing label in column %r before splitting "
-            "(loaded %s rows, %s remaining).",
+            "Dropped %s row(s) with missing label in column %r before splitting (loaded %s rows, %s remaining).",
             n_dropped,
             label_column,
             n_before_drop,

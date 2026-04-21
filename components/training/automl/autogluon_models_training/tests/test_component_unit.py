@@ -43,6 +43,8 @@ def _dataframes_with_real_pandas(build):
     finally:
         if saved is not None:
             sys.modules["pandas"] = saved
+
+
 RUN_ID = "run-456"
 SAMPLE_ROW = '[{"feature1": 1, "target": 1.1}]'
 
@@ -263,6 +265,7 @@ class TestAutogluonModelsTrainingUnitTests:
         self, mock_predictor_class, mock_read_csv, mock_notebooks, tmp_path
     ):
         """Train, test, and extra frames: ±inf → NaN and full-row dedup run before ``fit`` / ``refit_full``."""
+
         def _frames(pd):
             train = pd.DataFrame(
                 {
@@ -330,6 +333,7 @@ class TestAutogluonModelsTrainingUnitTests:
         self, mock_predictor_class, mock_read_csv, mock_notebooks, tmp_path
     ):
         """When ``extra_train_data_path`` is empty, only train and test frames are cleansed."""
+
         def _frames(pd):
             train = pd.DataFrame({"f": [1.0, float("inf")], "target": [0.0, 1.0]})
             test = pd.DataFrame({"f": [2.0], "target": [0.5]})

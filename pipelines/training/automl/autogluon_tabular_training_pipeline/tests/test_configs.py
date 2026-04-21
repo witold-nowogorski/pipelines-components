@@ -20,9 +20,7 @@ _CONFIGS_JSON = Path(__file__).resolve().parent / "test_configs.json"
 
 def _require_nonempty_str(value: Any, field: str, index: int) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise ValueError(
-            f"test_configs.json[{index}] {field!r} must be a non-empty string; got {value!r}."
-        )
+        raise ValueError(f"test_configs.json[{index}] {field!r} must be a non-empty string; got {value!r}.")
     return value
 
 

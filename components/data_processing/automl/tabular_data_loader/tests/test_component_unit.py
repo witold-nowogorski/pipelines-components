@@ -32,6 +32,7 @@ def _count_rows_with_non_empty_trip_price(csv_path: Path) -> int:
         idx = header.index("Trip_Price")
         return sum(1 for row in reader if len(row) > idx and row[idx].strip() != "")
 
+
 mocked_env_variables = {
     "AWS_ACCESS_KEY_ID": "test_key",
     "AWS_SECRET_ACCESS_KEY": "test_secret",
@@ -534,6 +535,7 @@ class TestAutomlDataLoaderUnitTests:
     @mock.patch.dict("os.environ", mocked_env_variables)
     def test_stratified_train_test_split_rejection_propagates(self, tmp_path):
         """Classification stratify failures (e.g. too few per class) surface from train_test_split."""
+
         def train_test_split_impl(*args, **kwargs):
             if kwargs.get("stratify") is not None:
                 raise ValueError(
