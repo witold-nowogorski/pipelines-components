@@ -315,13 +315,13 @@ def automl_data_loader(  # noqa: D417
         label_column=label_column,
     )
 
-    sampled_dataframe.replace([math.inf, -math.inf], float("nan"), inplace=True)
-
     if label_column not in sampled_dataframe.columns:
         raise ValueError(
             f"Label column {label_column!r} not found in the dataset. "
             f"Available columns: {list(sampled_dataframe.columns)}"
         )
+
+    sampled_dataframe.replace([math.inf, -math.inf], float("nan"), inplace=True)
 
     n_before_dedup = len(sampled_dataframe)
     sampled_dataframe.drop_duplicates(inplace=True)
