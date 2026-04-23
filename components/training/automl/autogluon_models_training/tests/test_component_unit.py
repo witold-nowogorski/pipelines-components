@@ -265,7 +265,8 @@ class TestAutogluonModelsTrainingUnitTests:
             assert model_meta["name"] == model_name_full
             assert model_meta["location"]["model_directory"] == model_name_full
             assert "predictor" in model_meta["location"]
-            assert "notebook" in model_meta["location"]
+            assert "notebooks" in model_meta["location"]
+            assert "metrics" in model_meta["location"]
             assert "test_data" in model_meta["metrics"]
             nb_path = Path(models_output_dir) / model_name_full / "notebooks" / "automl_predictor_notebook.ipynb"
             assert nb_path.exists()
@@ -620,18 +621,20 @@ class TestAutogluonModelsTrainingUnitTests:
         assert lgbm["name"] == "LightGBM_BAG_L1_FULL"
         assert lgbm["location"]["model_directory"] == "LightGBM_BAG_L1_FULL"
         assert lgbm["location"]["predictor"] == str(Path("LightGBM_BAG_L1_FULL") / "predictor")
-        assert lgbm["location"]["notebook"] == str(
+        assert lgbm["location"]["notebooks"] == str(
             Path("LightGBM_BAG_L1_FULL") / "notebooks" / "automl_predictor_notebook.ipynb"
         )
+        assert lgbm["location"]["metrics"] == str(Path("LightGBM_BAG_L1_FULL") / "metrics")
         assert lgbm["metrics"]["test_data"] == {"r2": 0.9, "root_mean_squared_error": 0.31}
 
         cat = models[1]
         assert cat["name"] == "CatBoost_BAG_L1_FULL"
         assert cat["location"]["model_directory"] == "CatBoost_BAG_L1_FULL"
         assert cat["location"]["predictor"] == str(Path("CatBoost_BAG_L1_FULL") / "predictor")
-        assert cat["location"]["notebook"] == str(
+        assert cat["location"]["notebooks"] == str(
             Path("CatBoost_BAG_L1_FULL") / "notebooks" / "automl_predictor_notebook.ipynb"
         )
+        assert cat["location"]["metrics"] == str(Path("CatBoost_BAG_L1_FULL") / "metrics")
         assert cat["metrics"]["test_data"] == {"r2": 0.85, "root_mean_squared_error": 0.42}
 
         # Shared context fields still present alongside models

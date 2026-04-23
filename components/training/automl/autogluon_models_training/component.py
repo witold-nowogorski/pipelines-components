@@ -316,7 +316,8 @@ def autogluon_models_training(
             "location": {
                 "model_directory": model_name_full,
                 "predictor": str(Path(model_name_full) / "predictor"),
-                "notebook": str(Path(model_name_full) / "notebooks" / "automl_predictor_notebook.ipynb"),
+                "notebooks": str(Path(model_name_full) / "notebooks" / "automl_predictor_notebook.ipynb"),
+                "metrics": str(Path(model_name_full) / "metrics"),
             },
             "metrics": {
                 "test_data": eval_results,
