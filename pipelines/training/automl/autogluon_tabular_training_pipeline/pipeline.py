@@ -173,7 +173,7 @@ def autogluon_tabular_training_pipeline(
         extra_train_data_path=data_loader_task.outputs["extra_train_data_path"],
     )
     training_task.set_caching_options(False)
-    training_task.set_cpu_request("4").set_memory_request("16Gi")
+    training_task.set_cpu_request("4").set_memory_request("16Gi").set_cpu_limit("32").set_memory_limit("64Gi")
 
     # Generate leaderboard
     leaderboard_evaluation_task = leaderboard_evaluation(

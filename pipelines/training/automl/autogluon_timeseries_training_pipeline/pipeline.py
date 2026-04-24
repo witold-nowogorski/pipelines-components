@@ -164,7 +164,7 @@ def autogluon_timeseries_training_pipeline(
         known_covariates_names=known_covariates_names,
     )
     selection_task.set_caching_options(False)
-    selection_task.set_cpu_request("4").set_memory_request("16Gi")
+    selection_task.set_cpu_request("4").set_memory_request("16Gi").set_cpu_limit("32").set_memory_limit("64Gi")
 
     # Stage 3: Model Refitting (parallelism=1: RWO workspace allows only one pod on the volume at a time).
     with dsl.ParallelFor(items=selection_task.outputs["top_models"], parallelism=1) as model_name:
@@ -182,7 +182,7 @@ def autogluon_timeseries_training_pipeline(
             sample_rows=data_loader_task.outputs["sample_rows"],
         )
         refit_task.set_caching_options(False)
-        refit_task.set_cpu_request("2").set_memory_request("8Gi")
+        refit_task.set_cpu_request("2").set_memory_request("8Gi").set_cpu_limit("32").set_memory_limit("64Gi")
 
     # Stage 4: Leaderboard Evaluation
     # Generate leaderboard from all refitted models
