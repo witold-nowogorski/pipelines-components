@@ -133,7 +133,7 @@ def autogluon_timeseries_training_pipeline(
         timestamp_column=timestamp_column,
     )
     data_loader_task.set_caching_options(False)
-    data_loader_task.set_cpu_request("2").set_memory_request("8Gi")
+    data_loader_task.set_cpu_request("2").set_memory_request("8Gi").set_cpu_limit("32").set_memory_limit("64Gi")
 
     # Configure S3 secret for data loader
     from kfp.kubernetes import use_secret_as_env
@@ -191,7 +191,7 @@ def autogluon_timeseries_training_pipeline(
         eval_metric=selection_task.outputs["eval_metric_name"],
     )
     leaderboard_task.set_caching_options(False)
-    leaderboard_task.set_cpu_request("1").set_memory_request("4Gi")
+    leaderboard_task.set_cpu_request("1").set_memory_request("4Gi").set_cpu_limit("32").set_memory_limit("64Gi")
 
 
 if __name__ == "__main__":

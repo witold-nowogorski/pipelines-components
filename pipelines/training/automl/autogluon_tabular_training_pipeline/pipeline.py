@@ -143,7 +143,7 @@ def autogluon_tabular_training_pipeline(
         task_type=task_type,
     )
     data_loader_task.set_caching_options(False)
-    data_loader_task.set_cpu_request("2").set_memory_request("8Gi")
+    data_loader_task.set_cpu_request("2").set_memory_request("8Gi").set_cpu_limit("32").set_memory_limit("64Gi")
 
     use_secret_as_env(
         data_loader_task,
@@ -181,7 +181,7 @@ def autogluon_tabular_training_pipeline(
         eval_metric=training_task.outputs["eval_metric"],
     )
     leaderboard_evaluation_task.set_caching_options(False)
-    leaderboard_evaluation_task.set_cpu_request("1").set_memory_request("4Gi")
+    leaderboard_evaluation_task.set_cpu_request("1").set_memory_request("4Gi").set_cpu_limit("32").set_memory_limit("64Gi")
 
 
 if __name__ == "__main__":
