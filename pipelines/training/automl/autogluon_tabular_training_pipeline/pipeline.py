@@ -3,6 +3,9 @@ from kfp_components.components.data_processing.automl.tabular_data_loader import
 from kfp_components.components.training.automl.autogluon_leaderboard_evaluation import leaderboard_evaluation
 from kfp_components.components.training.automl.autogluon_models_training import autogluon_models_training
 
+MAX_CPUS = "32"
+MAX_MEMORY = "64Gi"
+
 
 @dsl.pipeline(
     name="autogluon-tabular-training-pipeline",
@@ -143,7 +146,7 @@ def autogluon_tabular_training_pipeline(
         task_type=task_type,
     )
     data_loader_task.set_caching_options(False)
-    data_loader_task.set_cpu_request("2").set_memory_request("8Gi").set_cpu_limit("32").set_memory_limit("64Gi")
+    data_loader_task.set_cpu_request("2").set_memory_request("8Gi").set_cpu_limit(MAX_CPUS).set_memory_limit(MAX_MEMORY)
 
     use_secret_as_env(
         data_loader_task,
@@ -173,7 +176,7 @@ def autogluon_tabular_training_pipeline(
         extra_train_data_path=data_loader_task.outputs["extra_train_data_path"],
     )
     training_task.set_caching_options(False)
-    training_task.set_cpu_request("4").set_memory_request("16Gi").set_cpu_limit("32").set_memory_limit("64Gi")
+    training_task.set_cpu_request("4").set_memory_request("16Gi").set_cpu_limit(MAX_CPUS).set_memory_limit(MAX_MEMORY)
 
     # Generate leaderboard
     leaderboard_evaluation_task = leaderboard_evaluation(
@@ -181,8 +184,8 @@ def autogluon_tabular_training_pipeline(
         eval_metric=training_task.outputs["eval_metric"],
     )
     leaderboard_evaluation_task.set_caching_options(False)
-    leaderboard_evaluation_task.set_cpu_request("1").set_memory_request("4Gi").set_cpu_limit("32").set_memory_limit(
-        "64Gi"
+    leaderboard_evaluation_task.set_cpu_request("1").set_memory_request("4Gi").set_cpu_limit(MAX_CPUS).set_memory_limit(
+        MAX_MEMORY
     )
 
 
