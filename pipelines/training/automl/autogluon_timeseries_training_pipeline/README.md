@@ -60,7 +60,7 @@ prediction_length=14, top_n=3, )
 - **Managed**: Yes
 - **Dependencies**:
   - Kubeflow:
-    - Name: Pipelines, Version: >=2.16.0
+    - Name: Pipelines, Version: 2.16.0
     - Name: Kubernetes, Version: >=1.28.0
 - **Tags**:
   - training

@@ -5,7 +5,7 @@ managed: true
 dependencies:
   kubeflow:
     - name: Pipelines
-      version: '>=2.16.0'
+      version: '2.16.0'
     - name: Kubernetes
       version: ">=1.28.0"
 tags:

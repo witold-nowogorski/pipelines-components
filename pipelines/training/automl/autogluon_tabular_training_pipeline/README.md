@@ -62,7 +62,7 @@ The pipeline leverages AutoGluon's unique ensembling strategy that combines mult
 - **Managed**: Yes
 - **Dependencies**:
   - Kubeflow:
-    - Name: Pipelines, Version: >=2.16.0
+    - Name: Pipelines, Version: 2.16.0
     - Name: Kubernetes, Version: >=1.28.0
 - **Tags**:
   - training
