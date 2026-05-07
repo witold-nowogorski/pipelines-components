@@ -108,7 +108,7 @@ ormsgpack==1.12.2
 overrides==7.7.0
 packaging==26.0
 pandas==2.2.3
-pillow==12.1.1
+pillow==12.2.0
 pluggy==1.6.0
 polyfactory==3.3.0
 progressbar2==4.5.0
