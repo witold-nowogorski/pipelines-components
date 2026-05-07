@@ -833,15 +833,15 @@ wheels = [
 
 [[package]]
 name = "google-auth"
-version = "2.50.0"
+version = "2.49.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
     { name = "pyasn1-modules" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5f/18/238d7021d151bdab868f23433817b027dd759135202f4dfce0670d1230ca/google_auth-2.50.0.tar.gz", hash = "sha256:f35eafb191195328e8ce10a7883970877e7aeb49c2bfaa54aa0e394316d353d0", size = 336523, upload-time = "2026-04-30T21:19:29.659Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c6/fc/e925290a1ad95c975c459e2df070fac2b90954e13a0370ac505dff78cb99/google_auth-2.49.2.tar.gz", hash = "sha256:c1ae38500e73065dcae57355adb6278cf8b5c8e391994ae9cbadbcb9631ab409", size = 333958, upload-time = "2026-04-10T00:41:21.888Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/cf/4880c2137c14280b2f59975cdf12cc442bc0ae1f9ea473a26eaa0c146786/google_auth-2.50.0-py3-none-any.whl", hash = "sha256:04382175e28b94f49694977f0a792688b59a668def1499e9d8de996dc9ce5b15", size = 246495, upload-time = "2026-04-30T21:19:27.664Z" },
+    { url = "https://files.pythonhosted.org/packages/73/76/d241a5c927433420507215df6cac1b1fa4ac0ba7a794df42a84326c68da8/google_auth-2.49.2-py3-none-any.whl", hash = "sha256:c2720924dfc82dedb962c9f52cabb2ab16714fd0a6a707e40561d217574ed6d5", size = 240638, upload-time = "2026-04-10T00:41:14.501Z" },
 ]
 
 [[package]]
@@ -1196,7 +1196,7 @@ wheels = [
 
 [[package]]
 name = "kfp"
-version = "2.16.1"
+version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -1214,9 +1214,9 @@ dependencies = [
     { name = "tabulate" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/24/d8/4b72f7ffaf8918f629873766db81d444c7dd65a2c7342829b7b9df3d0cc3/kfp-2.16.1.tar.gz", hash = "sha256:67fffff19960bb4624836d1ee0a4449e6e326092646883f7d57e9d1cc402bce2", size = 317570, upload-time = "2026-05-05T13:47:52.389Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/0b/10d75f52c8281a683efa110affd154c407d967336cc5bf9c5fa16520a35c/kfp-2.16.0.tar.gz", hash = "sha256:08b0cdf3c34ac89e73995ba647d1815d09dfe527c59092ff44e136e18213270e", size = 313979, upload-time = "2026-02-25T14:30:30.866Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/64/c2393ab7410017cefd5fd5693811a77d7d55d5b02faf09a9e6402c4d187c/kfp-2.16.1-py3-none-any.whl", hash = "sha256:d90742de35d1fee871240ddf619b29f5c25103f522eddaf97d2b24cb2483d3ba", size = 421579, upload-time = "2026-05-05T13:47:50.588Z" },
+    { url = "https://files.pythonhosted.org/packages/84/71/8cc07a616412cc78b57481bf49248c74584881078c22c16d6c465a73f528/kfp-2.16.0-py3-none-any.whl", hash = "sha256:c06e5b24c5d4ddc9a65eb1f4ab120437d97a10c483d87fb41ce2f91a30f5aedb", size = 418401, upload-time = "2026-02-25T14:30:29.334Z" },
 ]
 
 [[package]]
@@ -1314,32 +1314,32 @@ provides-extras = ["lint", "test", "test-automl", "dev"]
 
 [[package]]
 name = "kfp-kubernetes"
-version = "2.16.1"
+version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "kfp" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fe/bf/ec1d0b97220b779fe373a2e52b217e70ac391cbcdbe184d5d4a128aecb3d/kfp_kubernetes-2.16.1.tar.gz", hash = "sha256:31267b58d04ad97165fb640ab8fe99c2ac58b9f46077a046bd34d281e9491d54", size = 19754, upload-time = "2026-05-05T13:48:28.948Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/3d/953a9553ef097425a8e050037edab73794d6fb7ec94010ba30bebb860e5c/kfp_kubernetes-2.16.0.tar.gz", hash = "sha256:39c0ae960f3cbd349b1fb823071bc687b626d14cb759746b5b98700a7d6956a8", size = 19714, upload-time = "2026-02-25T14:32:30.879Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/be/f6022a3c453318b867d2ba9ec9d07f52ecb01ff0bfccd3567b2d3280d0d7/kfp_kubernetes-2.16.1-py3-none-any.whl", hash = "sha256:d6bb854d93a6bc6893f70e9e4f4978d6133760ae62d8626be8a4360993cc9375", size = 27306, upload-time = "2026-05-05T13:48:27.326Z" },
+    { url = "https://files.pythonhosted.org/packages/53/ee/3f36c14ddc007e9c0a542d4dbd25409c3dab49c4423446365c493c1525a4/kfp_kubernetes-2.16.0-py3-none-any.whl", hash = "sha256:d2a5ef0edfbfdf3a60dbb72f8cbde766636d06cd30d90cbd23c8167538fcdb4d", size = 27274, upload-time = "2026-02-25T14:32:29.745Z" },
 ]
 
 [[package]]
 name = "kfp-pipeline-spec"
-version = "2.16.1"
+version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/8e/1844e0a11fefe77c86f6fc0d0ea463b338111d914515b930ff86be65a281/kfp_pipeline_spec-2.16.1.tar.gz", hash = "sha256:0b0719a828a48c2ff081e6cf6517531907231afadcfbbee0e6b2ea419bcbe634", size = 10573, upload-time = "2026-05-05T13:46:36.558Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4f/bb/cb8a8d84fecfb0be421dacd93e63c3499e416a31f8fad2466cbdbd13d23e/kfp_pipeline_spec-2.16.0.tar.gz", hash = "sha256:96b6fe189978aac8e3c928611d467788914c7e5ff2c6ca313279116734e2e26c", size = 10555, upload-time = "2026-02-25T14:30:25.218Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3f/ca/7aab754c26e3cdb6dedc718bbb0d9d76600229bbc1cd008143db6fd62ec1/kfp_pipeline_spec-2.16.1-py3-none-any.whl", hash = "sha256:c6873c4362e8d227cd900e7e186ac9d2cdd2d492e9baa905d52d78452b7c2b65", size = 9866, upload-time = "2026-05-05T13:46:35.055Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/4a/3cf478682cbcf72bb5808ca375d8f1deb829c9564563924d4c9d887721d6/kfp_pipeline_spec-2.16.0-py3-none-any.whl", hash = "sha256:02dc0feff42b1bca14f798fbd2264a537e697411527c6ee6343ed5546f1ea172", size = 9865, upload-time = "2026-02-25T14:30:24.231Z" },
 ]
 
 [[package]]
 name = "kfp-server-api"
-version = "2.16.1"
+version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -1347,7 +1347,7 @@ dependencies = [
     { name = "six" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0c/c8/f96575c59dbbd5524f08b474f346b25390b18e56f94d3fee8ead90cbe817/kfp_server_api-2.16.1.tar.gz", hash = "sha256:19a80adcfe2d3666522ed164baeafe86a48ce25ee7fce9d93bb6457339120abd", size = 63847, upload-time = "2026-05-05T13:46:06.739Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/39/d7/13c537014f637288297ee9af5684b18b3823acb89e1f588b469196eba83c/kfp_server_api-2.16.0.tar.gz", hash = "sha256:32243e9eed9a386110e0363cbdc88b026f177bd5a1a53b63684bc0a47eb665a3", size = 63821, upload-time = "2026-02-25T14:29:56.678Z" }
 
 [[package]]
 name = "kubernetes"
@@ -2992,8 +2992,8 @@ name = "uvicorn"
 version = "0.44.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click", marker = "sys_platform != 'emscripten'" },
-    { name = "h11", marker = "sys_platform != 'emscripten'" },
+    { name = "click" },
+    { name = "h11" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5e/da/6eee1ff8b6cbeed47eeb5229749168e81eb4b7b999a1a15a7176e51410c9/uvicorn-0.44.0.tar.gz", hash = "sha256:6c942071b68f07e178264b9152f1f16dfac5da85880c4ce06366a96d70d4f31e", size = 86947, upload-time = "2026-04-06T09:23:22.826Z" }
 wheels = [
