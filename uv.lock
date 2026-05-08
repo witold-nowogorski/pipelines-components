@@ -1294,7 +1294,7 @@ requires-dist = [
     { name = "kfp-components", extras = ["lint"], marker = "extra == 'dev'" },
     { name = "kfp-components", extras = ["test"], marker = "extra == 'dev'" },
     { name = "kfp-components", extras = ["test"], marker = "extra == 'test-automl'" },
-    { name = "kfp-kubernetes", specifier = ">=2.15.2" },
+    { name = "kfp-kubernetes", specifier = ">=2.16.1" },
     { name = "kfp-kubernetes", marker = "extra == 'test'" },
     { name = "kubernetes", marker = "extra == 'test-automl'" },
     { name = "packaging", marker = "extra == 'test'" },
@@ -1314,15 +1314,15 @@ provides-extras = ["lint", "test", "test-automl", "dev"]
 
 [[package]]
 name = "kfp-kubernetes"
-version = "2.16.0"
+version = "2.16.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "kfp" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/10/3d/953a9553ef097425a8e050037edab73794d6fb7ec94010ba30bebb860e5c/kfp_kubernetes-2.16.0.tar.gz", hash = "sha256:39c0ae960f3cbd349b1fb823071bc687b626d14cb759746b5b98700a7d6956a8", size = 19714, upload-time = "2026-02-25T14:32:30.879Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/bf/ec1d0b97220b779fe373a2e52b217e70ac391cbcdbe184d5d4a128aecb3d/kfp_kubernetes-2.16.1.tar.gz", hash = "sha256:31267b58d04ad97165fb640ab8fe99c2ac58b9f46077a046bd34d281e9491d54", size = 19754, upload-time = "2026-05-05T13:48:28.948Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/53/ee/3f36c14ddc007e9c0a542d4dbd25409c3dab49c4423446365c493c1525a4/kfp_kubernetes-2.16.0-py3-none-any.whl", hash = "sha256:d2a5ef0edfbfdf3a60dbb72f8cbde766636d06cd30d90cbd23c8167538fcdb4d", size = 27274, upload-time = "2026-02-25T14:32:29.745Z" },
+    { url = "https://files.pythonhosted.org/packages/38/be/f6022a3c453318b867d2ba9ec9d07f52ecb01ff0bfccd3567b2d3280d0d7/kfp_kubernetes-2.16.1-py3-none-any.whl", hash = "sha256:d6bb854d93a6bc6893f70e9e4f4978d6133760ae62d8626be8a4360993cc9375", size = 27306, upload-time = "2026-05-05T13:48:27.326Z" },
 ]
 
 [[package]]
