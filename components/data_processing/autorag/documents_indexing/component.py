@@ -129,7 +129,7 @@ def documents_indexing(
         api_key=os.getenv("LLAMA_STACK_CLIENT_API_KEY"),
     )
 
-    paths = sorted(Path(extracted_text.path).glob("*.md"))
+    paths = sorted(p for ext in ("*.md", "*.txt") for p in Path(extracted_text.path).glob(ext))
     total_documents = len(paths)
     logger.info("Found %s documents to index", total_documents)
 
@@ -157,7 +157,7 @@ def documents_indexing(
         batch_documents = [
             Document(
                 page_content=p.read_text(encoding="utf-8", errors="replace"),
-                metadata={"document_id": p.stem},
+                metadata={"document_id": p.stem if p.suffix == ".md" else p.name},
             )
             for p in batch_paths
         ]

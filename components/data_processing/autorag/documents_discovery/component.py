@@ -35,6 +35,7 @@ def documents_discovery(
     import os
     import sys
     from math import inf
+    from pathlib import Path
 
     import boto3
 
@@ -105,7 +106,7 @@ def documents_discovery(
 
     test_data_docs_names = get_test_data_docs_names()
     if test_data_docs_names:
-        supported_files.sort(key=lambda c: c["Key"] not in test_data_docs_names)
+        supported_files.sort(key=lambda c: Path(c["Key"]).name not in test_data_docs_names)
 
     total_size = 0
     selected = []
